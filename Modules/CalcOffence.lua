@@ -3172,6 +3172,7 @@ function calcs.offence(env, actor, activeSkill)
 				end
 			end
 		end
+
 		if (output.ScorchChanceOnHit + output.ScorchChanceOnCrit) > 0 then
 			local sourceHitDmg = 0
 			local sourceCritDmg = 0
@@ -3181,6 +3182,22 @@ function calcs.offence(env, actor, activeSkill)
 			if canDeal.Fire then
 				sourceHitDmg = sourceHitDmg + output.FireHitAverage
 				sourceCritDmg = sourceCritDmg + output.FireCritAverage
+			end
+			if canDeal.Cold and skillModList:Flag(cfg, "ColdCanScorch") then
+				sourceHitDmg = sourceHitDmg + output.ColdHitAverage
+				sourceCritDmg = sourceCritDmg + output.ColdCritAverage
+			end
+			if canDeal.Lightning and skillModList:Flag(cfg, "LightningCanScorch") then
+				sourceHitDmg = sourceHitDmg + output.LightningHitAverage
+				sourceCritDmg = sourceCritDmg + output.LightningCritAverage
+			end
+			if canDeal.Chaos and skillModList:Flag(cfg, "ChaosCanScorch") then
+				sourceHitDmg = sourceHitDmg + output.ChaosHitAverage
+				sourceCritDmg = sourceCritDmg + output.ChaosCritAverage
+			end
+			if canDeal.Physical and skillModList:Flag(cfg, "PhysicalCanScorch") then
+				sourceHitDmg = sourceHitDmg + output.PhysicalHitAverage
+				sourceCritDmg = sourceCritDmg + output.PhysicalCritAverage
 			end
 			local igniteMode = env.configInput.igniteMode or "AVERAGE"
 			if igniteMode == "CRIT" then
@@ -3203,6 +3220,22 @@ function calcs.offence(env, actor, activeSkill)
 				sourceHitDmg = sourceHitDmg + output.ColdHitAverage
 				sourceCritDmg = sourceCritDmg + output.ColdCritAverage
 			end
+			if canDeal.Fire and skillModList:Flag(cfg, "FireCanBrittle") then
+				sourceHitDmg = sourceHitDmg + output.ColdHitAverage
+				sourceCritDmg = sourceCritDmg + output.ColdCritAverage
+			end
+			if canDeal.Lightning and skillModList:Flag(cfg, "LightningCanBrittle") then
+				sourceHitDmg = sourceHitDmg + output.LightningHitAverage
+				sourceCritDmg = sourceCritDmg + output.LightningCritAverage
+			end
+			if canDeal.Chaos and skillModList:Flag(cfg, "ChaosCanBrittle") then
+				sourceHitDmg = sourceHitDmg + output.ChaosHitAverage
+				sourceCritDmg = sourceCritDmg + output.ChaosCritAverage
+			end
+			if canDeal.Physical and skillModList:Flag(cfg, "PhysicalCanBrittle") then
+				sourceHitDmg = sourceHitDmg + output.PhysicalHitAverage
+				sourceCritDmg = sourceCritDmg + output.PhysicalCritAverage
+			end
 			local igniteMode = env.configInput.igniteMode or "AVERAGE"
 			if igniteMode == "CRIT" then
 				output.BrittleChanceOnHit = 0
@@ -3223,6 +3256,22 @@ function calcs.offence(env, actor, activeSkill)
 			if canDeal.Lightning then
 				sourceHitDmg = sourceHitDmg + output.LightningHitAverage
 				sourceCritDmg = sourceCritDmg + output.LightningCritAverage
+			end
+			if canDeal.Fire and skillModList:Flag(cfg, "FireCanSap") then
+				sourceHitDmg = sourceHitDmg + output.ColdHitAverage
+				sourceCritDmg = sourceCritDmg + output.ColdCritAverage
+			end
+			if canDeal.Cold and skillModList:Flag(cfg, "ColdCanSap") then
+				sourceHitDmg = sourceHitDmg + output.LightningHitAverage
+				sourceCritDmg = sourceCritDmg + output.LightningCritAverage
+			end
+			if canDeal.Chaos and skillModList:Flag(cfg, "ChaosCanSap") then
+				sourceHitDmg = sourceHitDmg + output.ChaosHitAverage
+				sourceCritDmg = sourceCritDmg + output.ChaosCritAverage
+			end
+			if canDeal.Physical and skillModList:Flag(cfg, "PhysicalCanSap") then
+				sourceHitDmg = sourceHitDmg + output.PhysicalHitAverage
+				sourceCritDmg = sourceCritDmg + output.PhysicalCritAverage
 			end
 			local igniteMode = env.configInput.igniteMode or "AVERAGE"
 			if igniteMode == "CRIT" then
