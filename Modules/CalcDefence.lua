@@ -189,6 +189,13 @@ function calcs.defence(env, actor)
 				end
 			end
 		end
+		local convEvasionToArmour = modDB:Sum("BASE", nil, "EvasionGainAsArmour")
+		if convEvasionToArmour > 0 then
+			armourBase = modDB:Sum("BASE", nil, "Evasion") * convEvasionToArmour / 100
+			if breakdown then
+				breakdown.slot("Conversion", "Evasion to Armour", nil, armourBase, total, "Armour", "ArmourAndEvasion", "Defences", "Evasion")
+			end			
+		end
 		local convManaToArmour = modDB:Sum("BASE", nil, "ManaConvertToArmour")
 		if convManaToArmour > 0 then
 			armourBase = 2 * modDB:Sum("BASE", nil, "Mana") * convManaToArmour / 100
