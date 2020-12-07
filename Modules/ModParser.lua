@@ -1689,6 +1689,7 @@ local specialModList = {
 	["instant recovery"] = {  mod("FlaskInstantRecovery", "BASE", 100) },
 	["(%d+)%% of recovery applied instantly"] = function(num) return { mod("FlaskInstantRecovery", "BASE", num) } end,
 	["has no attribute requirements"] = { flag("NoAttributeRequirements") },
+	["can be any kind of weapon"] = { mod("WeaponData", "LIST", { key = "countsAllofAll", value = true }) },
 	-- Socketed gem modifiers
 	["%+(%d+) to level of socketed gems"] = function(num) return { mod("GemProperty", "LIST", { keyword = "all", key = "level", value = num }, { type = "SocketedIn", slotName = "{SlotName}" }) } end,
 	["%+(%d+) to level of socketed ([%a ]+) gems"] = function(num, _, type) return { mod("GemProperty", "LIST", { keyword = type, key = "level", value = num }, { type = "SocketedIn", slotName = "{SlotName}" }) } end,
@@ -1702,6 +1703,7 @@ local specialModList = {
 	["socketed gems reserve no mana"] = { mod("ManaReserved", "MORE", -100, { type = "SocketedIn", slotName = "{SlotName}" }) },
 	["socketed skill gems get a (%d+)%% mana multiplier"] = function(num) return { mod("ExtraSkillMod", "LIST", { mod = mod("SupportManaMultiplier", "MORE", num - 100) }, { type = "SocketedIn", slotName = "{SlotName}" }) } end,
 	["socketed gems have blood magic"] = { flag("SkillBloodMagic", { type = "SocketedIn", slotName = "{SlotName}" }) },
+	["%+(%d+)%% to quality of all (.+) gems"] = function(num, _, skill) return { mod("GemProperty", "LIST", {keyword = skill, key = "quality", value = num }) } end,	
 	["socketed gems have elemental equilibrium"] = function() 
 		--Currently hardcoded to what Elemental Equilibrium node is
 		return {
@@ -2009,6 +2011,14 @@ local specialModList = {
 	["you have onslaught while you have cat's agility"] = { flag("Condition:Onslaught", { type = "Condition", var = "AffectedByCat'sAgility" }) },
 	["you have onslaught while on low life"] = { flag("Condition:Onslaught", { type = "Condition", var = "LowLife" }) },
 	["you have onslaught while not on low mana"] = { flag("Condition:Onslaught", { type = "Condition", var = "LowMana", neg = true }) },
+	["nearby allies have adrenaline"] = { mod("ExtraAura", "LIST", { mod = mod("Condition:Adrenaline", "FLAG", true) }) },
+	["nearby allies have tailwind"] = { mod("ExtraAura", "LIST", { mod = mod("Condition:Tailwind", "FLAG", true) }) },
+	["nearby allies have phasing"] = { mod("ExtraAura", "LIST", { mod = mod("Condition:Phasing", "FLAG", true) }) },
+	["nearby allies' action speed cannot be modified to below base value"] = { mod("ExtraAura", "LIST", { mod = mod("ActionSpeedCannotBeBelowBase", "FLAG", true) }) },
+	["nearby allies' movement speed cannot be modified to below base value"] = { mod("ExtraAura", "LIST", { mod = mod("MovementSpeedCannotBeBelowBase", "FLAG", true) }) },	
+	["nearby allies have fortify"] = { mod("ExtraAura", "LIST", { mod = mod("Condition:Fortify", "FLAG", true) }) },
+	["nearby allies have onslaught"] = { mod("ExtraAura", "LIST", { mod = mod("Condition:Onslaught", "FLAG", true) }) },
+	["nearby allies have unholy might"] = { mod("ExtraAura", "LIST", { mod = mod("Condition:UnholyMight", "FLAG", true) }) },	
 	["you have tailwind if you have dealt a critical strike recently"] = { flag("Condition:Tailwind", { type = "Condition", var = "CritRecently" }) },
 	["you have unholy might while you have no energy shield"] = { flag("Condition:UnholyMight", { type = "Condition", var = "HaveEnergyShield", neg = true }) },
 	["your aura buffs do not affect allies"] = { flag("SelfAurasCannotAffectAllies") },
