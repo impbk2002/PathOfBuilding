@@ -1689,7 +1689,12 @@ local specialModList = {
 	["instant recovery"] = {  mod("FlaskInstantRecovery", "BASE", 100) },
 	["(%d+)%% of recovery applied instantly"] = function(num) return { mod("FlaskInstantRecovery", "BASE", num) } end,
 	["has no attribute requirements"] = { flag("NoAttributeRequirements") },
-	["counts as all weapon and shield"] = { mod("WeaponData", "LIST", { key = "countsAllofAll", value = true}) },
+	["counts as all weapon and shield"] = { mod("WeaponData", "LIST", { key = "countsAllofAll", value = true}), mod("WeaponData", "LIST", { key = "countsAsAll1H", value = true}) },
+	["counts as shield"] = { mod("WeaponData", "LIST", { key = "countsAsShield", value = true}) },
+	["counts as bow"] = { mod("WeaponData", "LIST", { key = "countsAsBow", value = true}) },
+	["counts as wand"] = { mod("WeaponData", "LIST", { key = "countsAsWand", value = true}) },
+	["counts as wand"] = { mod("WeaponData", "LIST", { key = "countsAsWand", value = true}) },	
+	["unencumber"] = { flag("Condition:Unencumbered"), flag("Condition:Unarmed") },
 	-- Socketed gem modifiers
 	["%+(%d+) to level of socketed gems"] = function(num) return { mod("GemProperty", "LIST", { keyword = "all", key = "level", value = num }, { type = "SocketedIn", slotName = "{SlotName}" }) } end,
 	["%+(%d+) to level of socketed ([%a ]+) gems"] = function(num, _, type) return { mod("GemProperty", "LIST", { keyword = type, key = "level", value = num }, { type = "SocketedIn", slotName = "{SlotName}" }) } end,
