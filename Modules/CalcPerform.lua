@@ -161,6 +161,26 @@ local function doActorAttribsPoolsConditions(env, actor)
 			end
 		end
 	end
+	if modDB:Flag(nil, "WeaponMaser") then
+		condList["WieldingDifferentWeaponTypes"] = true
+		condList["DualWieldingClaws"] = true
+		condList["DualWielding"] = true
+		condList["UsingWand"] = true
+		condList["UsingBow"] = true
+		condList["UsingTwoHandedWeapon"] = true
+		condList["UsingOneHandedWeapon"] = true
+		condList["UsingMeleeWeapon"] = true
+		condList["UsingStaff"] = true
+		condList["UsingAxe"] = true
+		condList["UsingSword"] = true
+		condList["UsingDagger"] = true
+		condList["UsingMace"] = true
+		condList["UsingClaw"] = true
+		condList["Unencumbered"] = true
+		condList["Unarmed"] = true
+		condList["OffHandIsEmpty"] = true
+		condList["UsingShield"] = true
+	end	
 	if env.mode_combat then		
 		if not modDB:Flag(nil, "NeverCrit") then
 			condList["CritInPast8Sec"] = true
