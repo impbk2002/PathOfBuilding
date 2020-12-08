@@ -2902,7 +2902,13 @@ local specialModList = {
 		--mod("GrantedPassive", "LIST", "golem commander"),
 		--mod("GrantedPassive", "LIST", "discord artisan"),
 	},
-
+	["discourage"] = {
+		mod("GrantedPassive", "LIST", "hex master"),
+		mod("GrantedPassive", "LIST", "skittering runes"),
+		mod("GrantedPassive", "LIST", "whispers of doom"),
+		flag("CursesIgnoreHexproof"),
+	},
+	["grant every bonus from all weapon status"] = { flag("WeaponMaser") },
 	-- Pantheon: Soul of Tukohama support
 	["while stationary, gain ([%d%.]+)%% of life regenerated per second every second, up to a maximum of (%d+)%%"] = function(num, _, limit) return {
 		flag("Condition:Stationary"),
