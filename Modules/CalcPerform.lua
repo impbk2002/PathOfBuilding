@@ -1331,6 +1331,19 @@ function calcs.perform(env)
 							end
 							mergeBuff(srcList, debuffs, buff.name)
 						end
+					elseif buff.type or false then
+						if env.mode_buffs and activeSkill.skillData.enable then
+							local skillCfg = buff.activeSkillBuff and skillCfg
+							local modStore = buff.activeSkillBuff and skillModList or castingMinion.modDB
+							if buff.applyAllies then
+								modDB.conditions["AffectedBy"..buff.name:gsub(" ","")] = true
+								mergeBuff(buff.modList, buffs, buff.name)
+							end
+							if env.minion and (env.minion == castingMinion or buff.applyAllies) then
+				 				env.minion.modDB.conditions["AffectedBy"..buff.name:gsub(" ","")] = true
+								mergeBuff(buff.modList, minionBuffs, buff.name)
+							end
+						end
 					end
 				end
 			end
