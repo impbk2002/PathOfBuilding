@@ -388,7 +388,7 @@ local skills, mod, flag, skill = ...
 			div = 60
 		},
 		["infusion_effect_+%"] = {
-			mod("InfusionEffect", "INC", true, 0, 0, { type = "GlobalEffect", effectType = "Modifier", effectName = "Infused" }),
+			mod("InfusionEffect", "INC", true, 0, 0, { type = "GlobalEffect", effectType = "Buff", effectName = "Infused" }),
 		},
 	},
 #baseMod flag("Condition:PhysicalInfusion", { type = "SkillType", skillType = SkillType.PhysicalSkill })
