@@ -2943,6 +2943,7 @@ local specialModList = {
 		flag("CursesIgnoreHexproof"),
 	},
 	["weapon master"] = {
+		mod("Condition:WeaponMaster", "FLAG", true),
 		mod("Condition:Unencumbered", "FLAG", true),
 		mod("Condition:WieldingDifferentWeaponTypes", "FLAG", true),
 		mod("Condition:DualWieldingClaws", "FLAG", true),
