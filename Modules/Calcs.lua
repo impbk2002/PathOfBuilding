@@ -125,7 +125,7 @@ function calcs.buildOutput(build, mode)
 
 	if mode == "MAIN" then
 		output.ExtraPoints = env.modDB:Sum("BASE", nil, "ExtraPoints")
-
+		output.AscExtras = env.modDB:Sum("BASE", nil, "AscExtras")
 		local specCfg = {
 			source = "Tree"
 		}
@@ -301,6 +301,9 @@ function calcs.buildOutput(build, mode)
 		if env.modDB:Flag(nil, "HerEmbrace") then
 			t_insert(combatList, "Her Embrace")
 		end
+		if env.modDB:Flag(nil, "ArcaneSurge") and not env.modDB:Flag(nil, "Condition:HaveArcaneSurge") then
+			t_insert(combatList, "Arcane Surge")
+		end
 		for name in pairs(env.buffs) do
 			t_insert(buffList, name)
 		end
@@ -381,6 +384,9 @@ function calcs.buildOutput(build, mode)
 			if env.minion.modDB:Flag(nil, "Tailwind") then
 				t_insert(combatList, "Tailwind")
 			end
+			if env.minion.modDB:Flag(nil, "ArcaneSurge") then
+				t_insert(combatList, "Arcane Surge")
+			end		
 			for name in pairs(env.minionBuffs) do
 				t_insert(buffList, name)
 			end

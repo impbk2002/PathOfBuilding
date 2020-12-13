@@ -98,6 +98,42 @@ return {
 	{ var = "aspectOfTheSpiderWebStacks", type = "count", label = "# of Spider's Web Stacks:", ifSkill = "Aspect of the Spider", apply = function(val, modList, enemyModList)
 		modList:NewMod("ExtraSkillMod", "LIST", { mod = modLib.createMod("Multiplier:SpiderWebApplyStack", "BASE", val) }, "Config", { type = "SkillName", skillName = "Aspect of the Spider" })
 	end },
+	{ label = "Glorious Madness:", ifSkill = "Embrace Madness" },
+	{ var = "DilutingTouchStacks", type = "count", label = "# of Diluting touch stacks:", ifSkill = "Embrace Madness", tooltip = "Diuting Touch is a debuff apply:\n\t9% reduced flask effect and flask charges gained per stack, up to 90%\nbasic duration of debuff is 20s", apply = function(val, modList, enemyModList)
+		modList:NewMod("FlaskEffect", "INC", -9*(m_min( val, 10)), "Config", { type = "GlobalEffect", effectType = "Debuff", effectName = "Diluting Touch"}, { type = "Condition", var = "CanHaveGloriousMadness" } )
+		modList:NewMod("FlaskChargesGained", "INC", -9*(m_min( val, 10)), "Config", { type = "GlobalEffect", effectType = "Debuff", effectName = "Diluting Touch"}, { type = "Condition", var = "CanHaveGloriousMadness" } )
+		if not ( val==0 ) then
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", true, "Config", { type = "Condition", var = "CanHaveGloriousMadness" } )
+		else
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", false, "Config" )
+		end			
+	end },
+	{ var = "WastingTouchStacks", type = "count", label = "# of Wasting touch stacks:", ifSkill = "Embrace Madness", tooltip = "Wasting Touch is a debuff apply:\n\t9% reduced Life and Energy Shield Recovery rate per stack, up to 90%\nbasic duration of debuff is 20s", apply = function(val, modList, enemyModList)
+		--modList:NewMod("ExtraSkillMod", "LIST", { mod = modLib.createMod("Multiplier:WastingTouchApplyStack", "BASE", val) }, "Config", { type = "SkillName", skillName = "Embrace Madness" })
+		modList:NewMod("LifeRecoveryRate", "INC", -9*(m_min( val, 10)), "Config", { type = "GlobalEffect", effectType = "Debuff", effectName = "Wasting Touch"}, { type = "Condition", var = "CanHaveGloriousMadness" } )
+		modList:NewMod("EnergyShieldRecoveryRate", "INC", -9*(m_min( val, 10)), "Config", { type = "GlobalEffect", effectType = "Debuff", effectName = "Wasting Touch"}, { type = "Condition", var = "CanHaveGloriousMadness" } )
+		if not ( val==0 ) then
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", true, "Config", { type = "Condition", var = "CanHaveGloriousMadness" } )
+		else
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", false, "Config" )
+		end			
+	end },
+	{ var = "ParalysingTouchStacks", type = "count", label = "# of Paralysing touch stacks:", ifSkill = "Embrace Madness", tooltip = "Paralysing Touch is a debuff apply:\n\t6% reduced action speed per stack, up to 60%\nbasic duration of debuff is 20s", apply = function(val, modList, enemyModList)
+		modList:NewMod("ActionSpeed", "INC", -6*(m_min( val, 10)), "Config", { type = "GlobalEffect", effectType = "Debuff", effectName = "Paralysing Touch"}, { type = "Condition", var = "CanHaveGloriousMadness" } )
+		if not ( val==0 ) then
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", true, "Config", { type = "Condition", var = "CanHaveGloriousMadness" } )
+		else
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", false, "Config" )
+		end			
+	end },
+	{ var = "ErodingTouchStacks", type = "count", label = "# of Eroding touch stacks:", ifSkill = "Embrace Madness", tooltip = "Eroding Touch is a debuff apply:\n\t6% increased damage taken per stack, up to 60%\nbasic duration of debuff is 20s", apply = function(val, modList, enemyModList)
+		modList:NewMod("DamageTaken", "INC", 6*(m_min( val, 10)), "Config", { type = "GlobalEffect", effectType = "Debuff", effectName = "Eroding Touch"}, { type = "Condition", var = "CanHaveGloriousMadness" } )
+		if not ( val==0 ) then
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", true, "Config", { type = "Condition", var = "CanHaveGloriousMadness" } )
+		else
+			modList:NewMod("Condition:AffectedByGloriousMadness", "FLAG", false, "Config" )
+		end			
+	end },	
 	{ label = "Banner Skills:", ifSkillList = { "Dread Banner", "War Banner" } },
 	{ var = "bannerPlanted", type = "check", label = "Is Banner Planted?", ifSkillList = { "Dread Banner", "War Banner" }, apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:BannerPlanted", "FLAG", true, "Config")
@@ -184,6 +220,86 @@ return {
 	{ var = "harbingerOfTimeSlipstream", type = "check", label = "Is Slipstream active?:", ifSkill =  "Summon Harbinger of Time", tooltip = "Harbinger of Time Slipstream buff grants:\n20% increased Action Speed\nBuff affects the player, allies and enemies in a small radius\nBuff has a base duration of 8s with a 20s Cooldown", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:HarbingerOfTime", "FLAG", true, "Config")
 	end },
+	{ label = "Greater Harbinger of Brutality:", ifSkill =  "Summon Greater Harbinger of Brutality" },
+	{ var = "greaterHarbingerOfBrutalityYieldingMortality", type = "check", label = "Is Yielding Mortality active?:", ifSkill =  "Summon Greater Harbinger of Brutality", tooltip = "Greater Harbinger of Brutality Yielding Mortality buff grants:\n\t50% increased Damage\n\t15% Damage Reduction\n\t30% increased Attack Speed\n\t30% increased Movement Speed\n\tBleeding enemies explode for 10% Life as Physical Damage\nBuff has a base duration of 8s with a 20s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfBrutality", "FLAG", true, "Config")
+	end },
+	{ label = "Harbinger of Brutality:", ifSkill =  "Summon Harbinger of Brutality" },
+	{ var = "harbingerOfBrutalityEnmityDivine", type = "check", label = "Is Enmity Divine active?:", ifSkill =  "Summon Harbinger of Brutality", tooltip = "Harbinger of Brutality Enmity Divine buff grants:\n\t50% increased Damage\n\t15% Damage Reduction\n\t30% increased Attack Speed\n\t30% increased Movement Speed\nBuff has a base duration of 8s with a 20s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfBrutality", "FLAG", true, "Config")
+	end },
+	{ label = "Greater Harbinger of the Arcane:", ifSkill =  "Summon Greater Harbinger of the Arcane" },
+	{ var = "greaterHarbingerOfArcaneArcaneSurge", type = "check", label = "Is Arcane Surge active?:", ifSkill =  "Summon Greater Harbinger of the Arcane", tooltip = "Greater Harbinger of Arcane Arcane Surge buff grants:\n\t20% more Spell Damage\n\t20% increased Cast Speed\n\t1% maximum Mana Regenerated per second\nBuff has a base duration of 4s with a 8s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfTheArcane1", "FLAG", true, "Config")
+		modList:NewMod("Condition:ArcaneSurge", "FLAG", true, "Config" )
+	end },
+	{ var = "greaterHarbingerOfArcaneSurgingThoughts", type = "check", label = "Is Surging Thoughts active?:", ifSkill =  "Summon Greater Harbinger of the Arcane", tooltip = "Greater Harbinger of Arcane grants:\n\t10% Lightning Penetration\n\t15% chance to Shock\nBuff has a base duration of 4s with a 8s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfTheArcane2", "FLAG", true, "Config")
+	end },
+	{ label = "Harbinger of the Arcane:", ifSkill =  "Summon Harbinger of the Arcane" },
+	{ var = "harbingerOfArcaneRipplingThoughts", type = "check", label = "Is Arcane Surge active?:", ifSkill =  "Summon Harbinger of the Arcane", tooltip = "Harbinger of Arcane Arcane Surge buff grants:\n\t20% more Spell Damage\n\t20% increased Cast Speed\n\t1% maximum Mana Regenerated per second\nBuff has a base duration of 4s with a 8s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfTheArcane", "FLAG", true, "Config")
+		modList:NewMod("Condition:HaveArcaneSurge", "FLAG", true, "Config")
+		modList:NewMod("Condition:ArcaneSurge", "FLAG", true, "Config" )
+		modList:NewMod("ArcaneSurge", "FLAG", true, "Config" )
+	end },
+	{ label = "Greater Harbinger of Directions:", ifSkill =  "Summon Greater Harbinger of Directions" },
+	{ var = "greaterHarbingerOfDirectionsShatteredDivinity1", type = "check", label = "Is additional projectile active?:", ifSkill =  "Summon Greater Harbinger of Directions", tooltip = "Greater Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 4s Cooldown and grants one or all of following benefits\n\t2 additional Projectiles", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfDirections1", "FLAG", true, "Config")
+	end },
+	{ var = "greaterHarbingerOfDirectionsShatteredDivinity2", type = "check", label = "Is additional Chain active?:", ifSkill =  "Summon Greater Harbinger of Directions", tooltip = "Greater Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 4s Cooldown and grants one or all of following benefits\n\t+2 Chain", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfDirections2", "FLAG", true, "Config")
+	end },
+	{ var = "greaterHarbingerOfDirectionsShatteredDivinity3", type = "check", label = "Is additional Pierce active?:", ifSkill =  "Summon Greater Harbinger of Directions", tooltip = "Greater Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 4s Cooldown and grants one or all of following benefits\n\tPierce 2 additional Targets", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfDirections3", "FLAG", true, "Config")
+	end },
+	{ var = "greaterHarbingerOfDirectionsShatteredDivinity4", type = "check", label = "Is additional Fork active?:", ifSkill =  "Summon Greater Harbinger of Directions", tooltip = "Greater Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 4s Cooldown and grants one or all of following benefits\n\tProjectiles Fork twice", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfDirections4", "FLAG", true, "Config")
+	end },
+	{ label = "Harbinger of Directions:", ifSkill =  "Summon Harbinger of Directions" },
+	{ var = "HarbingerOfDirectionsFracturingSpinner1", type = "check", label = "Is Fracturing Spinner active?:", ifSkill =  "Summon Harbinger of Directions", tooltip = "Harbinger of Directions Fracturing Spinner buff grants:\nBuff has a base duration of 4s with a 8s Cooldown and grants one or all of following benefits\n\t1 additional Projectile", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfDirections1", "FLAG", true, "Config")
+	end },
+	{ var = "HarbingerOfDirectionsFracturingSpinner2", type = "check", label = "Is additional Chain active?:", ifSkill =  "Summon Harbinger of Directions", tooltip = "Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 8s Cooldown and grants one or all of following benefits\n\t+1 Chain", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfDirections2", "FLAG", true, "Config")
+	end },
+	{ var = "HarbingerOfDirectionsFracturingSpinner3", type = "check", label = "Is additional Pierce active?:", ifSkill =  "Summon Harbinger of Directions", tooltip = "Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 8s Cooldown and grants one or all of following benefits\n\tPierce 1 additional Target", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfDirections3", "FLAG", true, "Config")
+	end },
+	{ var = "HarbingerOfDirectionsFracturingSpinner4", type = "check", label = "Is additional Fork active?:", ifSkill =  "Summon Harbinger of Directions", tooltip = "Harbinger of Directions Shattered Divinity buff grants:\nBuff has a base duration of 4s with a 8s Cooldown and grants one or all of following benefits\n\tProjectiles Fork", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfDirections4", "FLAG", true, "Config")
+	end },
+	{ label = "Greater Harbinger of Focus:", ifSkill =  "Summon Greater Harbinger of Focus" },
+	{ var = "greaterHarbingerOfFocusImmortalWill", type = "check", label = "Is Immortal Will active?:", ifSkill =  "Summon Greater Harbinger of Focus", tooltip = "While you are channelling, Greater Harbinger of Focus Immortal Will buff grants:\t\nImmunity to status ailments\n\tStun immunity\n\t20% damage reduction\n\tUnaffected by Curses\nBuff has a base duration of 4s with a 8s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfFocus", "FLAG", true, "Config")
+		modList:NewMod("CurseEffectOnSelf", "MORE", -100 , "Config", { type = "Condition", var = "Channelling"}, { type = "Condition", var = "GreaterHarbingerOfFocus"})
+	end },
+	{ label = "Harbinger of Focus:", ifSkill =  "Summon Harbinger of Focus" },
+	{ var = "greaterHarbingerOfFocusUnshatteredWill", type = "check", label = "Is Unshattered Will active?:", ifSkill =  "Summon Harbinger of Focus", tooltip = "While you are channelling, Harbinger of Focus Immortal Will buff grants:\n\tImmunity to status ailments\n\tStun immunity\n\t20% damage reduction\nBuff has a base duration of 4s with a 8s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfFocus", "FLAG", true, "Config")
+	end },
+	{ label = "Greater Harbinger of Storms:", ifSkill =  "Summon Greater Harbinger of Storms" },
+	{ var = "greaterHarbingerOfStormsChill", type = "check", label = "Is Harbinger chilling enemy?:", ifSkill =  "Summon Greater Harbinger of Storms", tooltip = "Greater Harbinger of Storms apply:\n\tChill up to 10 enemies\n\twith +40% increased effect\nThis effect has a base duration of 4s with a 4s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfStorms1", "FLAG", true, "Config")
+	end },
+	{ var = "greaterHarbingerOfStormsShock", type = "check", label = "Is Harbinger shocking enemy?:", ifSkill =  "Summon Greater Harbinger of Storms", tooltip = "Greater Harbinger of Storms apply:\n\tShock up to 10 enemies\n\twith +40% increased effect\nThis effect has a base duration of 4s with a 4s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:GreaterHarbingerOfStorms2", "FLAG", true, "Config")
+	end },
+	{ label = "Harbinger of Storms:", ifSkill =  "Summon Harbinger of Storms" },
+	{ var = "harbingerOfStormsChill", type = "check", label = "Is Harbinger chilling enemy?:", ifSkill =  "Summon Harbinger of Storms", tooltip = "Harbinger of Storms apply:\n\tChill up to 5 enemies\nThis effect has a base duration of 4s with a 4s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfStorms1", "FLAG", true, "Config")
+	end },
+	{ var = "harbingerOfStormsShock", type = "check", label = "Is Harbinger shocking enemy?:", ifSkill =  "Summon Harbinger of Storms", tooltip = "Harbinger of Storms apply:\n\tShock up to 5 enemies\nThis effect has a base duration of 4s with a 4s Cooldown", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HarbingerOfStorms2", "FLAG", true, "Config")
+	end },
+	{ label = "Shaper's Presence:", ifSkill =  "Shaper's Presence" },
+	{ var = "ShapersPresencebuff", type = "check", label = "Is Shaper's Presence active?:", ifSkill =  "Shaper's Presence", tooltip = "Shaper's Presence apply:\n\tincreases the duration of all effects (positive and negative) by 25%.\nThis effect has a base duration of 10s", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:ShapersPresence", "FLAG", true, "Config")
+	end },
+	{ label = "Maddening Presence:", ifSkill =  "Maddening Presence" },
+	{ var = "MaddeningPresencedebuff", type = "check", label = "Is Maddening Presence active?:", ifSkill =  "Maddening Presence", tooltip = "Maddening Presence apply:\n\tNearby Enemies will be afflicted with Malignant Madness, slowing them by 10% and reducing their Damage by 10%.\nThis effect has a base duration of 10s", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:MaddeningPresence", "FLAG", true, "Config")
+	end },	
 	{ label = "Hex:", ifSkillFlag = "hex" },
 	{ var = "multiplierHexDoom", type = "count", label = "Doom on Hex:", ifSkillFlag = "hex", apply = function(val, modList, enemyModList)
 		modList:NewMod("Multiplier:HexDoomStack", "BASE", val, "Config")

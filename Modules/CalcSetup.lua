@@ -45,11 +45,16 @@ function calcs.initModDB(env, modDB)
 	modDB:NewMod("MovementSpeed", "INC", -30, "Base", { type = "Condition", var = "Maimed" })
 	modDB:NewMod("Condition:Burning", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "Condition", var = "Ignited" })
 	modDB:NewMod("Condition:Chilled", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "Condition", var = "Frozen" })
-	modDB:NewMod("Condition:Poisoned", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "MultiplierThreshold", var = "PoisonStack", threshold = 1 })
+	modDB:NewMod("Condition:Shocked", "FLAG", true, "Base", { type = "Condition", var = "OnShockedGround" }, { type = "Condition", varList = {"IgnoreShockedGround", "IgnoreShock"}, neg = true } )
+	modDB:NewMod("Condition:Chilled", "FLAG", true, "Base", { type = "Condition", var = "OnChilledGround" }, { type = "Condition", varList = {"IgnoreChilledGround", "IgnoreChill"}, neg = true } )
+	modDB:NewMod("Condition:Poisoned", "FLAG", true, "Base", { type = "IgnoreCond" }, { type = "MultiplierThreshold", var = "PoisonStack", threshold = 1 }, { type = "Condition", var = "IgnorePoison", neg = true } )
+	modDB:NewMod("DamageTaken", "INC", 10, "Base", ModFlag.Attack, { type ="GlobalEffect", effectType = "Debuff"}, { type = "Condition", var = "Intimidated" }  )
+	modDB:NewMod("DamageTaken", "INC", 10, "Base", ModFlag.Spell, { type ="GlobalEffect", effectType = "Debuff"}, { type = "Condition", var = "Unnerved" }  )	
 	modDB:NewMod("Blind", "FLAG", true, "Base", { type = "Condition", var = "Blinded" })
 	modDB:NewMod("Chill", "FLAG", true, "Base", { type = "Condition", var = "Chilled" })
 	modDB:NewMod("Freeze", "FLAG", true, "Base", { type = "Condition", var = "Frozen" })
 	modDB:NewMod("Fortify", "FLAG", true, "Base", { type = "Condition", var = "Fortify" })
+	modDB:NewMod("ArcaneSurge", "FLAG", true, "Base", { type = "Condition", var = "ArcaneSurge" })	
 	modDB:NewMod("Onslaught", "FLAG", true, "Base", { type = "Condition", var = "Onslaught" })
 	modDB:NewMod("UnholyMight", "FLAG", true, "Base", { type = "Condition", var = "UnholyMight" })
 	modDB:NewMod("Tailwind", "FLAG", true, "Base", { type = "Condition", var = "Tailwind" })
@@ -663,7 +668,8 @@ function calcs.initEnv(build, mode, override)
 						t_insert(supportList, { 
 							grantedEffect = grantedEffect,
 							level = value.level,
-							quality = 0,
+							quality = value.quality,
+							qualityId = value.qualityId,
 							enabled = true,
 						})
 					end
