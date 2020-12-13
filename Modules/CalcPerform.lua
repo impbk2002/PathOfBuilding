@@ -484,7 +484,7 @@ local function doActorMisc(env, actor)
 		if modDB:Sum("BASE", nil, "AvoidPoison") >= 100 and modDB:Flag(nil, "Condition:Poisoned") then
 			modDB:NewMod("Condition:IgnorePoison", "FLAG", true)
 			modDB:ReplaceMod("Condition:Poisoned", "FLAG", false, "Config" )
-		end		
+		end
 		if modDB:Flag(nil, "Fortify") then
 			local effectScale = 1 + modDB:Sum("INC", nil, "FortifyEffectOnSelf", "BuffEffectOnSelf") / 100
 			local modList = modDB:List(nil, "convertFortifyBuff")
@@ -546,17 +546,21 @@ local function doActorMisc(env, actor)
 			end
 		end
 		if modDB:Flag(nil, "Chill") then
-			local effect = m_max(m_floor(30 * calcLib.mod(modDB, nil, "SelfChillEffect")), 0)
-			modDB:NewMod("ActionSpeed", "INC", effect * (modDB:Flag(nil, "SelfChillEffectIsReversed") and 1 or -1), "Chill")
+			if not modDB:Flag(nil, "IgnoreChillEffect") then
+				local effect = m_max(m_floor(30 * calcLib.mod(modDB, nil, "SelfChillEffect")), 0)
+				modDB:NewMod("ActionSpeed", "INC", effect * (modDB:Flag(nil, "SelfChillEffectIsReversed") and 1 or -1), "Chill")
+			end
 		end
 		if modDB:Flag(nil, "Freeze") then
 			local effect = m_max(m_floor(70 * calcLib.mod(modDB, nil, "SelfChillEffect","FreezeEffectOnSelf")), 0)
 			modDB:NewMod("ActionSpeed", "INC", -effect, "Freeze", { type = "GlobalEffect", effectType = "Debuff"} )
 		end
 		if modDB:Flag(nil, "Condition:Shocked") and not ( modDB:Flag(nil,"Condition:AlreadyShocked") ) then
-			local effect = modDB:Override(nil, "SelfShockEffect") or 15
-			effect = m_max( m_min( 50, effect*calcLib.mod(modDB, nil, "SelfShockEffect") ), 0 )
-			modDB:NewMod("DamageTaken", "INC", effect, "Shock", { type = "Condition", var = "Shocked" })
+			if not modDB:Flag(nil, "IgnoreShockEffect") then
+				local effect = modDB:Override(nil, "SelfShockEffect") or 15
+				effect = m_max( m_min( 50, effect*calcLib.mod(modDB, nil, "SelfShockEffect") ), 0 )
+				modDB:NewMod("DamageTaken", "INC", effect, "Shock", { type = "Condition", var = "Shocked" })
+			end
 		end
 		if modDB:Flag(nil, "CanLeechLifeOnFullLife") then
 			condList["Leeching"] = true
@@ -569,7 +573,6 @@ local function doActorMisc(env, actor)
 			env.configInput.conditionLeeching = true
 		end
 		if modDB:Flag(nil, "ArcaneSurge") then
-			condList["ArcaneSurge"]= true
 			if not modDB:Flag(nil, "Condition:HaveArcaneSurge") then
 				local effectMod = m_floor(10*(1 + modDB:Sum("INC", nil, "ArcaneSurgeEffect", "BuffEffectOnSelf") / 100))
 				if modDB:Flag(nil, "level21ArcaneSurgeBuff") then
