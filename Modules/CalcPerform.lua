@@ -161,7 +161,7 @@ local function doActorAttribsPoolsConditions(env, actor)
 			end
 		end
 	end
-	if modDB:Flag(nil, "WeaponMaser") then
+	if modDB:Flag(nil, "Condition:WeaponMaster") then
 		condList["WieldingDifferentWeaponTypes"] = true
 		condList["DualWieldingClaws"] = true
 		condList["DualWielding"] = true
