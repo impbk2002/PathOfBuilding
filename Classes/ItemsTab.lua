@@ -2278,7 +2278,6 @@ function ItemsTabClass:AddItemTooltip(tooltip, item, slot, dbMode)
 			tooltip:AddLine(16, s_format("^x7F7F7FQuality: "..colorCodes.MAGIC.."+%d%%", item.quality))
 		end
 		if flaskData.lifeTotal then
-=======
 			if flaskData.lifeGradual ~= 0 then
 				tooltip:AddLine(16, s_format("^x7F7F7FRecovers %s%d ^x7F7F7FLife over %s%.1f0 ^x7F7F7FSeconds", 
 					main:StatColor(flaskData.lifeTotal, base.flask.life), flaskData.lifeGradual,
@@ -2451,7 +2450,7 @@ function ItemsTabClass:AddItemTooltip(tooltip, item, slot, dbMode)
 						t_insert(stats, s_format("^8Life recovered: ^7%d ^8instantly", inst))
 					elseif grad > 0 then
 						t_insert(stats, s_format("^8Life recovered: ^7%d ^8over ^7%.2fs", grad, lifeDur))
-          end
+					end
 				end				
 				if modDB:Flag(nil, "LifeFlaskAppliesToEnergyShield") then
 					if inst > 0 and grad > 0 then
