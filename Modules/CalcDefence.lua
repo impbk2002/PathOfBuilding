@@ -60,7 +60,7 @@ function calcs.actionSpeedMod(actor)
 		--actionSpeedMod = m_max(1, actionSpeedMod)
 		totalActionSpeed = m_max(base, totalActionSpeed)
 	end
-	if modDB:Override(nil, "ActionSpeed")
+	if modDB:Override(nil, "ActionSpeed") then
 		totalActionSpeed = modDB:Override(nil, "ActionSpeed") / 100
 	end
 	return totalActionSpeed
