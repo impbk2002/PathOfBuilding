@@ -82,6 +82,27 @@ function calcs.defence(env, actor)
 	output.DamageReductionMax = modDB:Override(nil, "DamageReductionMax") or data.misc.DamageReductionCap
 	output.PhysicalResist = m_min(output.DamageReductionMax, modDB:Sum("BASE", nil, "PhysicalDamageReduction"))
 	output.PhysicalResistWhenHit = m_min(output.DamageReductionMax, output.PhysicalResist + modDB:Sum("BASE", nil, "PhysicalDamageReductionWhenHit"))
+	if modDB:Flag(nil, "PhysicalResistance") then
+		local max, total
+		max = output.DamageReductionMax
+		total = modDB:Sum("BASE", nil, "PhysicalDamageReduction")
+		modDB:NewMod("PhysicalResist", "BASE", total, "Physical Resistance", nil)
+		modDB:NewMod("PhysicalDamageReduction", "BASE", -total, "Physical Resistance", nil)
+		output.PhysicalResistance = output.PhysicalResist
+		output["PhysicalResist"] = output.PhysicalResist
+		output["PhysicalResistTotal"] = total
+		output["PhysicalResistOverCap"] = m_max(0, total - max)
+		output["PhysicalResistOver75"] = m_max(0, total - 75)
+		output["MissingPhysicalResist"] = m_max(0, max - m_min(total, max))
+		if breakdown then
+			breakdown["PhysicalResist"] = {
+				"Max: "..max.."%",
+				"Total: "..total.."%",
+			}
+		end
+	else
+		output.PhysicalDamageReductionResist = 1
+	end
 	for _, elem in ipairs(resistTypeList) do
 		local max, total
 		if elem == "Chaos" and modDB:Flag(nil, "ChaosInoculation") then
@@ -321,40 +342,62 @@ function calcs.defence(env, actor)
 		output.SpellBlockChance = m_min(modDB:Sum("BASE", nil, "SpellBlockChance") * calcLib.mod(modDB, nil, "SpellBlockChance"), output.SpellBlockChanceMax) 
 		output.SpellProjectileBlockChance = m_min(output.SpellBlockChance  + modDB:Sum("BASE", nil, "ProjectileBlockChance") * calcLib.mod(modDB, nil, "SpellBlockChance"), output.SpellBlockChanceMax)
 	end
-	local BlockLucky = modDB:Flag(nil, "BlockChanceIsLucky") and 1
-	local BlockUnlucky = modDB:Flag(nil, "BlockChanceIsUnlucky") and 1
-	if env.mode_effective and BlockUnlucky and not BlockLucky then
-		output.BlockChance = output.BlockChance / 100 * output.BlockChance
-		output.SpellBlockChance = output.SpellBlockChance / 100 * output.SpellBlockChance
-		output.ProjectileBlockChance = output.ProjectileBlockChance / 100 * output.ProjectileBlockChance 
-		output.SpellProjectileBlockChance = output.SpellBlockChance
-	elseif env.mode_effective and BlockLucky and not BlockUnlucky then
+	local AttackBlockLuck = 0
+	local SpellBlockLuck = 0
+	if true and modDB:Flag(nil, "BlockChanceIsLucky") or modDB:Flag(nil, "AttackBlockChanceIsLucky") then
+		AttackBlockLuck = AttackBlockLuck + 1
+	end
+	if true and modDB:Flag(nil, "BlockChanceIsUnlucky") or modDB:Flag(nil, "AttackBlockChanceIsUnlucky") then
+		AttackBlockLuck = AttackBlockLuck - 1
+	end
+	if true and modDB:Flag(nil, "BlockChanceIsLucky") or modDB:Flag(nil, "SpellBlockChanceIsLucky") then
+		SpellBlockLuck = SpellBlockLuck + 1
+	end
+	if true and modDB:Flag(nil, "BlockChanceIsUnlucky") or modDB:Flag(nil, "SpellBlockChanceIsUnlucky") then
+		SpellBlockLuck = SpellBlockLuck - 1
+	end
+
+	local preBlock = output.BlockChance
+	local preProjBlock = output.ProjectileBlockChance
+	local preSpellProjBlock = output.SpellProjectileBlockChance
+	local preSpellBlock = output.SpellBlockChance
+	if env.mode_effective and AttackBlockLuck > 0 then
 		output.BlockChance = output.BlockChance * ( 2 - output.BlockChance / 100 )
 		output.ProjectileBlockChance = output.ProjectileBlockChance * ( 2 - output.ProjectileBlockChance / 100 )
-		if not modDB:Flag(nil, "BlockSpellIsUnlucky") then
-			output.SpellBlockChance = output.SpellBlockChance * ( 2 - output.SpellBlockChance / 100 )
-			output.SpellProjectileBlockChance = output.SpellProjectileBlockChance * ( 2 - output.SpellProjectileBlockChance / 100 )
-		end
+	elseif env.mode_effective and AttackBlockLuck < 0 then
+		output.BlockChance = output.BlockChance / 100 * output.BlockChance
+		output.ProjectileBlockChance = output.ProjectileBlockChance / 100 * output.ProjectileBlockChance
 	end
-	if env.mode_effective and modDB:Flag(nil, "BlockSpellIsUnlucky") and not ( BlockLucky or BlockUnlucky ) then
-		output.SpellBlockChance = output.SpellBlockChance / 100 * output.SpellBlockChance
+	if env.mode_effective and SpellBlockLuck < 0 then
+		output.SpellBlockChance = output.SpellBlockChance / 100 * output.SpellBlockChance 
 		output.SpellProjectileBlockChance = output.SpellProjectileBlockChance / 100 * output.SpellProjectileBlockChance 
+	elseif env.mode_effective and SpellBlockLuck > 0 then
+		output.SpellBlockChance = output.SpellBlockChance * ( 2 - output.SpellBlockChance / 100 )
+		output.SpellProjectileBlockChance = output.SpellProjectileBlockChance * ( 2 - output.SpellProjectileBlockChance / 100 )
 	end
 	if breakdown then
-		breakdown.BlockChance = breakdown.simple(baseBlockChance, nil, output.BlockChance, "BlockChance") or {}
+		breakdown.BlockChance = breakdown.simple(baseBlockChance, nil, preBlock, "BlockChance") or {}
 		if env.mode_effective then
-			if BlockLucky and not BlockUnlucky then
-				t_insert(breakdown.BlockChance, s_format("Block Chance is Lucky"))
-			elseif BlockUnlucky and not BlockLucky then
-				t_insert(breakdown.BlockChance, s_format("Block Chance is Unlucky"))	
+			if AttackBlockLuck > 0 then
+				t_insert(breakdown.BlockChance, s_format("Block Chance is Lucky:"))
+				t_insert(breakdown.BlockChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preBlock / 100, preBlock / 100))
+				t_insert(breakdown.BlockChance, s_format("= %.2f%%", output.BlockChance))
+			elseif AttackBlockLuck < 0 then
+				t_insert(breakdown.BlockChance, s_format("Block Chance is Unlucky:"))
+				t_insert(breakdown.BlockChance, s_format("(%.4f) x (%.4f)", preBlock / 100, preBlock / 100))
+				t_insert(breakdown.BlockChance, s_format("= %.2f%%", output.BlockChance))
 			end
 		end
-		breakdown.SpellBlockChance = breakdown.simple(0, nil, output.SpellBlockChance, "SpellBlockChance") or {}
+		breakdown.SpellBlockChance = breakdown.simple(0, nil, preSpellBlock, "SpellBlockChance") or {}
 		if env.mode_effective then
-			if BlockLucky and not BlockUnlucky and not modDB:Flag(nil, "BlockSpellIsUnlucky") then
-				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Lucky"))
-			elseif (modDB:Flag(nil, "BlockSpellIsUnlucky") or BlockUnlucky) and not BlockLucky then
-				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Unlucky"))
+			if SpellBlockLuck > 0 then
+				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Lucky:"))
+				t_insert(breakdown.SpellBlockChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preSpellBlock / 100, preSpellBlock / 100))
+				t_insert(breakdown.SpellBlockChance, s_format("= %.2f%%", output.SpellBlockChance))
+			elseif SpellBlockLuck < 0 then
+				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Unlucky:"))
+				t_insert(breakdown.SpellBlockChance, s_format("(%.4f) x (%.4f)", preSpellBlock / 100, preSpellBlock / 100))
+				t_insert(breakdown.SpellBlockChance, s_format("= %.2f%%", output.SpellBlockChance))
 			end
 		end
 	end
@@ -380,16 +423,56 @@ function calcs.defence(env, actor)
 	-- Dodge
 	output.AttackDodgeChance = m_min(modDB:Sum("BASE", nil, "AttackDodgeChance"), data.misc.DodgeChanceCap)
 	output.SpellDodgeChance = m_min(modDB:Sum("BASE", nil, "SpellDodgeChance"), data.misc.DodgeChanceCap)
-	local DodgeUnlucky = modDB:Flag(nil, "DodgeChanceIsUnlucky")
-	local DodgeLucky = modDB:Flag(nil, "DodgeChanceIsLucky")
-	if env.mode_effective and DodgeUnlucky and not DodgeLucky then
-		output.AttackDodgeChance = output.AttackDodgeChance / 100 * output.AttackDodgeChance
-		output.SpellDodgeChance = output.SpellDodgeChance / 100 * output.SpellDodgeChance
-	elseif env.mode_effective and DodgeLucky and not DodgeUnlucky then
+	local AttackDodgeLuck = 0
+	local SpellDodgeLuck = 0
+	if true and modDB:Flag(nil, "DodgeChanceIsLucky") or modDB:Flag(nil, "AttackDodgeChanceIsLucky") then
+		AttackDodgeLuck = AttackDodgeLuck + 1
+	end
+	if true and modDB:Flag(nil, "DodgeChanceIsUnlucky") or modDB:Flag(nil, "AttackDodgeChanceIsUnlucky") then
+		AttackDodgeLuck = AttackDodgeLuck - 1
+	end
+	if true and modDB:Flag(nil, "DodgeChanceIsLucky") or modDB:Flag(nil, "SpellDodgeChanceIsLucky") then
+		SpellDodgeLuck = SpellDodgeLuck + 1
+	end
+	if true and modDB:Flag(nil, "DodgeChanceIsUnlucky") or modDB:Flag(nil, "SpellDodgeChanceIsUnlucky") then
+		SpellDodgeLuck = SpellDodgeLuck - 1
+	end
+	local preAttackDodge = output.AttackDodgeChance
+	local preSpellDodge = output.SpellDodgeChance
+	if env.mode_effective and AttackDodgeLuck > 0 then
 		output.AttackDodgeChance = output.AttackDodgeChance * ( 2 - output.AttackDodgeChance / 100 )
+	elseif env.mode_effective and AttackDodgeLuck < 0 then
+		output.AttackDodgeChance = output.AttackDodgeChance / 100 * output.AttackDodgeChance 
+	end
+	if env.mode_effective and SpellDodgeLuck < 0 then
+		output.SpellDodgeChance = output.SpellDodgeChance / 100 * output.SpellDodgeChance 
+	elseif env.mode_effective and SpellDodgeLuck > 0 then
 		output.SpellDodgeChance = output.SpellDodgeChance * ( 2 - output.SpellDodgeChance / 100 )
 	end
-
+	if breakdown then
+		breakdown.AttackDodgeChance = breakdown.simple(0, nil, preAttackDodge, "AttackDodgeChance") or {}
+		breakdown.SpellDodgeChance = breakdown.simple(0, nil, preSpellDodge, "SpellDodgeChance") or {}
+		if env.mode_effective then
+			if AttackDodgeLuck > 0 then
+				t_insert(breakdown.AttackDodgeChance, s_format("Attack Dodge Chance is Lucky:"))
+				t_insert(breakdown.AttackDodgeChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preAttackDodge / 100, preAttackDodge / 100))
+				t_insert(breakdown.AttackDodgeChance, s_format("= %.2f%%", output.AttackDodgeChance))	
+			elseif AttackDodgeLuck < 0 then
+				t_insert(breakdown.AttackDodgeChance, s_format("Attack Dodge Chance is Unlucky:"))
+				t_insert(breakdown.AttackDodgeChance, s_format("(%.4f) x (%.4f)", preAttackDodge / 100, preAttackDodge / 100))
+				t_insert(breakdown.AttackDodgeChance, s_format("= %.2f%%", output.AttackDodgeChance))
+			end
+			if SpellDodgeLuck > 0 then
+				t_insert(breakdown.SpellDodgeChance, s_format("Spell Dodge Chance is Lucky:"))
+				t_insert(breakdown.SpellDodgeChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preSpellDodge / 100, preSpellDodge / 100))
+				t_insert(breakdown.SpellDodgeChance, s_format("= %.2f%%", output.SpellDodgeChance))	
+			elseif SpellDodgeLuck < 0 then
+				t_insert(breakdown.SpellDodgeChance, s_format("Spell Dodge Chance is Unlucky:"))
+				t_insert(breakdown.SpellDodgeChance, s_format("(%.4f) x (%.4f)", preSpellDodge / 100, preSpellDodge / 100))
+				t_insert(breakdown.SpellDodgeChance, s_format("= %.2f%%", output.SpellDodgeChance))
+			end
+		end
+	end
 	-- Recovery modifiers
 	output.LifeRecoveryRateMod = calcLib.mod(modDB, nil, "LifeRecoveryRate")
 	output.ManaRecoveryRateMod = calcLib.mod(modDB, nil, "ManaRecoveryRate")
