@@ -864,10 +864,14 @@ function calcs.defence(env, actor)
 			local resist = modDB:Flag(nil, "SelfIgnore"..damageType.."Resistance") and 0 or output[damageType.."Resist"]
 			output[damageType.."TakenDotMult"] = (1 - resist / 100) * (1 + takenInc / 100) * takenMore
 			if breakdown then
+				local physicalFlag = 0
+				if modDB:Flag(nil, "PhysicalResistance") then
+					physicalFlag = 1
+				end
 				breakdown[damageType.."TakenDotMult"] = { }
 				breakdown.multiChain(breakdown[damageType.."TakenDotMult"], {
 					label = "DoT Multiplier:",
-					{ "%.2f ^8(%s)", (1 - resist / 100), damageType == "Physical" and "physical damage reduction" or "resistance" },
+					{ "%.2f ^8(%s)", (1 - resist / 100), damageType == "Physical" and physicalFlag ~= 1 and "physical damage reduction" or "resistance" },
 					{ "%.2f ^8(increased/reduced damage taken)", (1 + takenInc / 100) },
 					{ "%.2f ^8(more/less damage taken)", takenMore },
 					total = s_format("= %.2f", output[damageType.."TakenDotMult"]),
