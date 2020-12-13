@@ -622,58 +622,56 @@ local function doActorMisc(env, actor)
 			modDB:NewMod("FireCanChill", "FLAG", true )
 			modDB:NewMod("ChaosCanChill", "FLAG", true )
 		end
-		if modDB:Flag(nil, "Condition:ShockingConflux") or modDB:Flag(nil, "Condition:ElementalConflux") then
-			if modDB:Flag(nil, "Condition:ShockingConflux") then
-				condList["ShockingConflux"] = true
-				modDB:NewMod("EnemyShockChance", "BASE", 100, "Shocking Conflux" )
-			end
+		if modDB:Flag(nil, "ShockingConflux") or modDB:Flag(nil, "ElementalConflux") then
 			modDB:NewMod("PhysicalCanShock", "FLAG", true )
 			modDB:NewMod("ColdCanShock", "FLAG", true )
 			modDB:NewMod("FireCanShock", "FLAG", true )
 			modDB:NewMod("ChaosCanShock", "FLAG", true )
 		end
-		if modDB:Flag(nil, "Condition:IgnitingConflux") or modDB:Flag(nil, "Condition:ElementalConflux") then
-			if modDB:Flag(nil, "Condition:IgnitingConflux") then
-				condList["IgnitingConflux"] = true
-				modDB:NewMod("EnemyIgniteChance", "BASE", 100, "Igniting Conflux" )
-			end
+		if modDB:Flag(nil, "IgnitingConflux") or modDB:Flag(nil, "ElementalConflux") then
 			modDB:NewMod("PhysicalCanIgnite", "FLAG", true )
 			modDB:NewMod("ColdCanIgnite", "FLAG", true )
 			modDB:NewMod("LightningCanIgnite", "FLAG", true )
 			modDB:NewMod("ChaosCanIgnite", "FLAG", true )
 		end
-		if modDB:Flag(nil, "Condition:ElementalConflux") then
+		if modDB:Flag(nil, "ShockingConflux") then
+			modDB:NewMod("EnemyShockChance", "BASE", 100, "Shocking Conflux" )
+		end
+		if modDB:Flag(nil, "IgnitingConflux") then
+			modDB:NewMod("EnemyIgniteChance", "BASE", 100, "Igniting Conflux" )
+		end
+		if modDB:Flag(nil, "FreezingConflux") then
+			modDB:NewMod("EnemyFreezeChance", "BASE", 100, "Freezing Conflux" )
+			modDB:NewMod("PhysicalCanFreeze", "FLAG", true )
+			modDB:NewMod("LightningCanFreeze", "FLAG", true )
+			modDB:NewMod("FireCanFreeze", "FLAG", true )
+			modDB:NewMod("ChaosCanFreeze", "FLAG", true )
+		end
+		if modDB:Flag(nil, "ElementalConflux") then
 			modDB:NewMod("EnemyIgniteChance", "BASE", 100, "Elemental Conflux" )
 			modDB:NewMod("EnemyShockChance", "BASE", 100, "Elemental Conflux" )
-			condList["ElementalConflux"] = true
 		end
 		if modDB:Flag(nil, "Condition:ScorchingConflux") then
-			condList["ScorchingConflux"] = true
-			modDB:NewMod("ScorchChance", "BASE", 100 )
-			modDB:NewMod("FireCanScorch", "FLAG", true )
+			modDB:NewMod("ScorchChance", "BASE", 100, "Scorching Conflux" )
 			modDB:NewMod("PhysicalCanScorch", "FLAG", true )
 			modDB:NewMod("ColdCanScorch", "FLAG", true )
 			modDB:NewMod("LightningCanScorch", "FLAG", true )
 			modDB:NewMod("ChaosCanScorch", "FLAG", true )
 		end
-		if modDB:Flag(nil, "Condition:BrittleConflux") then
-			condList["BrittleConflux"] = true
+		if modDB:Flag(nil, "BrittleConflux") then
 			modDB:NewMod("BrittleChance", "BASE", 100, "Brittle Conflux" )
 			modDB:NewMod("FireCanBrittle", "FLAG", true )
 			modDB:NewMod("PhysicalCanBrittle", "FLAG", true )
-			modDB:NewMod("ColdCanBrittle", "FLAG", true )
 			modDB:NewMod("LightningCanBrittle", "FLAG", true )
 			modDB:NewMod("ChaosCanBrittle", "FLAG", true )
 		end
-		if modDB:Flag(nil, "Condition:SappingConflux") then
-			condList["SappingConflux"] = true
+		if modDB:Flag(nil, "SappingConflux") then
 			modDB:NewMod("SapChance", "BASE", 100, "Sapping Conflux" )
 			modDB:NewMod("FireCanSap", "FLAG", true )
 			modDB:NewMod("PhysicalCanSap", "FLAG", true )
 			modDB:NewMod("ColdCanSap", "FLAG", true )
-			modDB:NewMod("LightningCanSap", "FLAG", true )
 			modDB:NewMod("ChaosCanSap", "FLAG", true )
-		end		
+		end
 		if modDB:Sum("BASE", nil, "CoveredInAshEffect") > 0 then
 			local effect = modDB:Sum("BASE", nil, "CoveredInAshEffect")
 			enemyDB:NewMod("FireDamageTaken", "INC", m_min(effect, 20), "Covered in Ash")
