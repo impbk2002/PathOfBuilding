@@ -1410,6 +1410,21 @@ function calcs.perform(env)
 					end
 					t_insert(curses, curse)	
 				end
+			elseif buff.type or false then
+				if env.mode_buffs then
+					local skillCfg = buff.activeSkillBuff and skillCfg
+					local modStore = buff.activeSkillBuff and skillModList or modDB
+					if not buff.applyNotPlayer then
+						activeSkill.buffSkill = true
+						modDB.conditions["AffectedBy"..buff.name:gsub(" ","")] = true
+						mergeBuff(buff.modList, buffs, buff.name)
+					end
+					if env.minion and (buff.applyMinions or buff.applyAllies) then
+						activeSkill.minionBuffSkill = true
+						env.minion.modDB.conditions["AffectedBy"..buff.name:gsub(" ","")] = true
+						mergeBuff(buff.modList, minionBuffs, buff.name)
+					end
+				end
 			end
 		end
 		if activeSkill.minion then
