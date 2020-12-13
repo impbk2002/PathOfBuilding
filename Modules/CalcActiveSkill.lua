@@ -236,7 +236,7 @@ function calcs.buildActiveSkillModList(env, activeSkill)
 				if env.modDB:Flag(nil, "Condition:WeaponMaster") then
 					weapon2Flags = bor(weapon2Flags, ModFlag.WeaponMelee, ModFlag.WeaponRanged, ModFlag.Weapon1H, ModFlag.Weapon2H)
 					weapon2Flags = bor(weapon2Flags, ModFlag.Axe, ModFlag.Claw, ModFlag.Dagger, ModFlag.Mace, ModFlag.Sword, ModFlag.Staff, ModFlag.Wand, ModFlag.Bow, ModFlag.Unarmed)
-				end				
+				end
 				activeSkill.weapon2Flags = weapon2Flags
 				skillFlags.weapon2Attack = true
 			elseif skillTypes[SkillType.DualWield] or weapon2Info then
