@@ -10,6 +10,7 @@ local ipairs = ipairs
 local t_insert = table.insert
 local m_min = math.min
 local m_max = math.max
+local m_floor = math.floor
 local s_format = string.format
 
 local tempTable1 = { }
@@ -51,11 +52,18 @@ end
 
 function calcs.actionSpeedMod(actor)
 	local modDB = actor.modDB
+	local base = 1 + modDB:Sum("BASE", nil, "ActionSpeed") / 100
 	local actionSpeedMod = 1 + (m_max(-data.misc.TemporalChainsEffectCap, modDB:Sum("INC", nil, "TemporalChainsActionSpeed")) + modDB:Sum("INC", nil, "ActionSpeed")) / 100
+	local more = modDB:More(nil, "ActionSpeed")
+	local totalActionSpeed = base * actionSpeedMod * more
 	if modDB:Flag(nil, "ActionSpeedCannotBeBelowBase") then
-		actionSpeedMod = m_max(1, actionSpeedMod)
+		--actionSpeedMod = m_max(1, actionSpeedMod)
+		totalActionSpeed = m_max(base, totalActionSpeed)
 	end
-	return actionSpeedMod
+	if modDB:Override(nil, "ActionSpeed")
+		totalActionSpeed = modDB:Override(nil, "ActionSpeed") / 100
+	end
+	return totalActionSpeed
 end
 
 -- Performs all defensive calculations
@@ -311,11 +319,44 @@ function calcs.defence(env, actor)
 		output.SpellProjectileBlockChance = output.ProjectileBlockChance
 	else
 		output.SpellBlockChance = m_min(modDB:Sum("BASE", nil, "SpellBlockChance") * calcLib.mod(modDB, nil, "SpellBlockChance"), output.SpellBlockChanceMax) 
+		output.SpellProjectileBlockChance = m_min(output.SpellBlockChance  + modDB:Sum("BASE", nil, "ProjectileBlockChance") * calcLib.mod(modDB, nil, "SpellBlockChance"), output.SpellBlockChanceMax)
+	end
+	local BlockLucky = modDB:Flag(nil, "BlockChanceIsLucky") and 1
+	local BlockUnlucky = modDB:Flag(nil, "BlockChanceIsUnlucky") and 1
+	if env.mode_effective and BlockUnlucky and not BlockLucky then
+		output.BlockChance = output.BlockChance / 100 * output.BlockChance
+		output.SpellBlockChance = output.SpellBlockChance / 100 * output.SpellBlockChance
+		output.ProjectileBlockChance = output.ProjectileBlockChance / 100 * output.ProjectileBlockChance 
 		output.SpellProjectileBlockChance = output.SpellBlockChance
+	elseif env.mode_effective and BlockLucky and not BlockUnlucky then
+		output.BlockChance = output.BlockChance * ( 2 - output.BlockChance / 100 )
+		output.ProjectileBlockChance = output.ProjectileBlockChance * ( 2 - output.ProjectileBlockChance / 100 )
+		if not modDB:Flag(nil, "BlockSpellIsUnlucky") then
+			output.SpellBlockChance = output.SpellBlockChance * ( 2 - output.SpellBlockChance / 100 )
+			output.SpellProjectileBlockChance = output.SpellProjectileBlockChance * ( 2 - output.SpellProjectileBlockChance / 100 )
+		end
+	end
+	if env.mode_effective and modDB:Flag(nil, "BlockSpellIsUnlucky") and not ( BlockLucky or BlockUnlucky ) then
+		output.SpellBlockChance = output.SpellBlockChance / 100 * output.SpellBlockChance
+		output.SpellProjectileBlockChance = output.SpellProjectileBlockChance / 100 * output.SpellProjectileBlockChance 
 	end
 	if breakdown then
-		breakdown.BlockChance = breakdown.simple(baseBlockChance, nil, output.BlockChance, "BlockChance")
-		breakdown.SpellBlockChance = breakdown.simple(0, nil, output.SpellBlockChance, "SpellBlockChance")
+		breakdown.BlockChance = breakdown.simple(baseBlockChance, nil, output.BlockChance, "BlockChance") or {}
+		if env.mode_effective then
+			if BlockLucky and not BlockUnlucky then
+				t_insert(breakdown.BlockChance, s_format("Block Chance is Lucky"))
+			elseif BlockUnlucky and not BlockLucky then
+				t_insert(breakdown.BlockChance, s_format("Block Chance is Unlucky"))	
+			end
+		end
+		breakdown.SpellBlockChance = breakdown.simple(0, nil, output.SpellBlockChance, "SpellBlockChance") or {}
+		if env.mode_effective then
+			if BlockLucky and not BlockUnlucky and not modDB:Flag(nil, "BlockSpellIsUnlucky") then
+				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Lucky"))
+			elseif (modDB:Flag(nil, "BlockSpellIsUnlucky") or BlockUnlucky) and not BlockLucky then
+				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Unlucky"))
+			end
+		end
 	end
 	if modDB:Flag(nil, "CannotBlockAttacks") then
 		output.BlockChance = 0
@@ -339,9 +380,14 @@ function calcs.defence(env, actor)
 	-- Dodge
 	output.AttackDodgeChance = m_min(modDB:Sum("BASE", nil, "AttackDodgeChance"), data.misc.DodgeChanceCap)
 	output.SpellDodgeChance = m_min(modDB:Sum("BASE", nil, "SpellDodgeChance"), data.misc.DodgeChanceCap)
-	if env.mode_effective and modDB:Flag(nil, "DodgeChanceIsUnlucky") then
+	local DodgeUnlucky = modDB:Flag(nil, "DodgeChanceIsUnlucky")
+	local DodgeLucky = modDB:Flag(nil, "DodgeChanceIsLucky")
+	if env.mode_effective and DodgeUnlucky and not DodgeLucky then
 		output.AttackDodgeChance = output.AttackDodgeChance / 100 * output.AttackDodgeChance
 		output.SpellDodgeChance = output.SpellDodgeChance / 100 * output.SpellDodgeChance
+	elseif env.mode_effective and DodgeLucky and not DodgeUnlucky then
+		output.AttackDodgeChance = output.AttackDodgeChance * ( 2 - output.AttackDodgeChance / 100 )
+		output.SpellDodgeChance = output.SpellDodgeChance * ( 2 - output.SpellDodgeChance / 100 )
 	end
 
 	-- Recovery modifiers
@@ -536,15 +582,17 @@ function calcs.defence(env, actor)
 	end
 
 	-- Miscellaneous: move speed, stun recovery, avoidance
-	output.MovementSpeedMod = modDB:Override(nil, "MovementSpeed") or calcLib.mod(modDB, nil, "MovementSpeed")
+	output.BaseMovementSpeed = 1 + modDB:Sum("BASE", nil, "MovementSpeed")/100
+	output.MovementSpeedMod = modDB:Override(nil, "MovementSpeed") or ( calcLib.mod(modDB, nil, "MovementSpeed") * output.BaseMovementSpeed )
 	if modDB:Flag(nil, "MovementSpeedCannotBeBelowBase") then
-		output.MovementSpeedMod = m_max(output.MovementSpeedMod, 1)
+		output.MovementSpeedMod = m_max(output.MovementSpeedMod, output.BaseMovementSpeed )
 	end
 	output.EffectiveMovementSpeedMod = output.MovementSpeedMod * output.ActionSpeedMod
 	if breakdown then
 		breakdown.EffectiveMovementSpeedMod = { }
 		breakdown.multiChain(breakdown.EffectiveMovementSpeedMod, {
-			{ "%.2f ^8(movement speed modifier)", output.MovementSpeedMod },
+			{ "%.2f ^8(base movement speed)", BaseMovementSpeed },
+			{ "%.2f ^8(movement speed modifier)", output.MovementSpeedMod / output.BaseMovementSpeed },
 			{ "%.2f ^8(action speed modifier)", output.ActionSpeedMod },
 			total = s_format("= %.2f ^8(effective movement speed modifier)", output.EffectiveMovementSpeedMod)
 		})
