@@ -1151,6 +1151,10 @@ return {
 		{ breakdown = "LightningDamageReduction" },
 		{ modName = { "ArmourAppliesToLightningDamageTaken", "SelfIgnoreLightningResistance", "DamageReductionMax" } }, 
 	}, },
+	{ label = "Chaos Dmg. Reduct", haveOutput = "ChaosDamageReduction", { format = "{0:output:ChaosDamageReduction}%", 
+		{ breakdown = "ChaosDamageReduction" },
+		{ modName = { "ArmourAppliesToChaosDamageTaken", "SelfIgnoreChaosResistance", "DamageReductionMax" } }, 
+	}, },
 } }
 } },
 { 1, "Evasion", 3, colorCodes.DEFENCE, {{ defaultCollapsed = false, label = "Evasion", data = {
