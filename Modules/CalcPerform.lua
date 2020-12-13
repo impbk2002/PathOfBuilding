@@ -1638,7 +1638,7 @@ function calcs.perform(env)
 	-- Calculates maximum Shock, then applies the strongest Shock effect to the enemy
 	if (enemyDB:Sum("BASE", nil, "ShockVal") > 0 or modDB:Sum(nil, "ShockBase", "ShockOverride")) and not enemyDB:Flag(nil, "Condition:AlreadyShocked") then
 		local baseShock = (modDB:Override(nil, "ShockBase") or 0) * (1 + modDB:Sum("INC", nil, "EnemyShockEffect") / 100)
-		local overrideShock = 0
+		local overrideShock = baseShock
 		for i, value in ipairs(modDB:Tabulate("BASE", { }, "ShockBase", "ShockOverride")) do
 			local mod = value.mod
 			local inc = 1 + modDB:Sum("INC", nil, "EnemyShockEffect") / 100
