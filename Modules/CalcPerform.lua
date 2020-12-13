@@ -95,23 +95,6 @@ local function doActorAttribsPoolsConditions(env, actor)
 		else
 			condList["UsingTwoHandedWeapon"] = true
 		end
-		if actor.weaponData1.countsAs2H or actor.weaponData1.countsAllofAll then
-			condList["UsingTwoHandedWeapon"] = true
-			condList["UsingAxe"] = true
-			condList["UsingSword"] = true
-			condList["UsingMace"] = true
-			condList["UsingMeleeWeapon"] = true
-			condList["UsingStaff"] = true
-		end
-		if actor.weaponData1.countsAsBow or actor.weaponData1.countsAllofAll then
-			condList["UsingBow"] = true
-		end
-		if actor.weaponData1.countsAsWand or actor.weaponData1.countsAllofAll then
-			condList["UsingWand"] = true
-		end
-		if actor.weaponData1.countsAsShield or actor.weaponData1.countsAllofAll then
-			condList["UsingShield"] = true
-		end		
 	end
 	if actor.weaponData2.type then
 		local info = env.data.weaponTypeInfo[actor.weaponData2.type]
@@ -133,20 +116,6 @@ local function doActorAttribsPoolsConditions(env, actor)
 		else
 			condList["UsingTwoHandedWeapon"] = true
 		end
-		if actor.weaponData2.countsAs2H or actor.weaponData2.countsAllofAll then
-			condList["UsingTwoHandedWeapon"] = true
-			condList["UsingMeleeWeapon"] = true
-			condList["UsingStaff"] = true
-		end
-		if actor.weaponData2.countsAsBow or actor.weaponData2.countsAllofAll then
-			condList["UsingBow"] = true
-		end
-		if actor.weaponData2.countsAsShield or actor.weaponData2.countsAllofAll then
-			condList["UsingShield"] = true
-		end
-		if actor.weaponData2.countsAsWand or actor.weaponData2.countsAllofAll then
-			condList["UsingWand"] = true
-		end		
 	end
 	if actor.weaponData1.type and actor.weaponData2.type then
 		condList["DualWielding"] = true
@@ -162,24 +131,24 @@ local function doActorAttribsPoolsConditions(env, actor)
 		end
 	end
 	if modDB:Flag(nil, "Condition:WeaponMaster") then
-		condList["WieldingDifferentWeaponTypes"] = true
-		condList["DualWieldingClaws"] = true
-		condList["DualWielding"] = true
-		condList["UsingWand"] = true
-		condList["UsingBow"] = true
-		condList["UsingTwoHandedWeapon"] = true
-		condList["UsingOneHandedWeapon"] = true
-		condList["UsingMeleeWeapon"] = true
-		condList["UsingStaff"] = true
+		condList["UsingShield"] = true
+		condList["OffHandIsEmpty"] = true
+		condList["Unencumbered"] = true
+		condList["Unarmed"] = true
 		condList["UsingAxe"] = true
 		condList["UsingSword"] = true
 		condList["UsingDagger"] = true
 		condList["UsingMace"] = true
 		condList["UsingClaw"] = true
-		condList["Unencumbered"] = true
-		condList["Unarmed"] = true
-		condList["OffHandIsEmpty"] = true
-		condList["UsingShield"] = true
+		condList["UsingMeleeWeapon"] = true
+		condList["UsingOneHandedWeapon"] = true
+		condList["UsingTwoHandedWeapon"] = true
+		condList["UsingStaff"] = true
+		condList["UsingBow"] = true
+		condList["UsingWand"] = true
+		condList["DualWielding"] = true
+		condList["DualWieldingClaws"] = true
+		condList["WieldingDifferentWeaponTypes"] = true
 	end	
 	if env.mode_combat then		
 		if not modDB:Flag(nil, "NeverCrit") then
