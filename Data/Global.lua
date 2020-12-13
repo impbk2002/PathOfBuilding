@@ -23,6 +23,7 @@ colorCodes = {
 	COLD = "^x3F6DB3",
 	LIGHTNING = "^xADAA47",
 	CHAOS = "^xD02090",
+	PHYSICAL = "^x808080",
 	POSITIVE = "^x33FF77",
 	NEGATIVE = "^xDD0022",
 	OFFENCE = "^xE07030",
