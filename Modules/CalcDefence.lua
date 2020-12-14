@@ -86,8 +86,6 @@ function calcs.defence(env, actor)
 		local max, total
 		max = output.DamageReductionMax
 		total = modDB:Sum("BASE", nil, "PhysicalDamageReduction")
-		modDB:NewMod("PhysicalResist", "BASE", total, "Physical Resistance", nil)
-		modDB:NewMod("PhysicalDamageReduction", "BASE", -total, "Physical Resistance", nil)
 		output.PhysicalResistance = output.PhysicalResist
 		output["PhysicalResist"] = output.PhysicalResist
 		output["PhysicalResistTotal"] = total
