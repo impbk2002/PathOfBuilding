@@ -1206,7 +1206,7 @@ return {
 	}, },
 	{ label = "Physical Resist", haveOutput = "PhysicalResistance", { format = "{0:output:PhysicalResist}% (+{0:output:PhysicalResistOverCap}%)",
 		{ breakdown = "PhysicalResist" }, 
-		{ modName = { "PhysicalResistMax", "PhysicalResist" }, },
+		{ modName = { "PhysicalResistMax", "PhysicalResist", "PhysicalDamageReduction" }, },
 	}, },
 } }
 } },
