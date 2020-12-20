@@ -177,7 +177,7 @@ return {
 	mod("AreaOfEffect", "INC", nil, 0, 0, { type = "Condition", var = "DualWielding", neg = true })
 },
 ["base_spell_repeat_count"] = {
-	skill("repeatCount", nil),
+	mod("repeatCount", "BASE", nil, ModFlag.Spell, 0, { type = "SkillType", skillType = SkillType.SpellCanRepeat }),
 },
 ["display_minion_monster_level"] = {
 	skill("minionLevel", nil),
@@ -994,16 +994,25 @@ return {
 ["projectiles_fork"] = {
 	flag("ForkOnce"),
 	mod("ForkCountMax", "BASE", nil),
+	value = 1,
 },
 ["number_of_additional_forks_base"] = {
 	flag("ForkTwice"),
+	flag("ForkOnce"),
 	mod("ForkCountMax", "BASE", nil),
+	value = 2,
 },
 ["active_skill_returning_projectile_damage_+%_final"] = {
 	mod("Damage", "MORE", nil, 0, 0, { type = "Condition", var = "ReturningProjectile" }),
 },
 ["returning_projectiles_always_pierce"] = {
 	flag("PierceAllTargets", { type = "Condition", var = "ReturningProjectile" }),
+},
+["projectiles_return_after_final_target"] = {
+	flag("Condition:ReturningProjectile", { type = "StatThreshold", stat = "ChainRemaining", thresholdStat = 0, upper = true }, { type = "StatThreshold", stat = "ForkRemaining", thresholdStat = 0, upper = true }),
+},
+["projectiles_can_hit_multiple_times"] = {
+	flag("SequentialProjectiles"),
 },
 ["support_barrage_attack_time_+%_per_projectile_fired"] = {
 	mod("SkillAttackTime", "INC", nil, 0, 0, { type = "Condition", varList = { "UsingBow", "UsingWand" }}, { type = "PerStat", stat = "ProjectileCount" }),
@@ -1114,6 +1123,9 @@ return {
 --
 -- Attack modifiers
 --
+["base_melee_attack_repeat_count"] = {
+	mod("repeatCount", "BASE", nil, bit.bor(ModFlag.Melee,ModFlag.Attack), 0, { type = "SkillType", skillType = SkillType.AttackCanRepeat }),
+},
 ["attack_speed_+%"] = {
 	mod("Speed", "INC", nil, ModFlag.Attack),
 },
