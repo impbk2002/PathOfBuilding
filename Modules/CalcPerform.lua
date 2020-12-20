@@ -183,13 +183,13 @@ local function doActorAttribsPoolsConditions(env, actor)
 		if actor.mainSkill.skillFlags.mine then
 			condList["DetonatedMinesRecently"] = true
 		end
-		if modDB:Sum("BASE", nil, "ScorchChance") > 0 or modDB:Flag(nil, "CritAlwaysAltAilments") and not modDB:Flag(nil, "NeverCrit") then
+		if not modDB:Flag(nil, "CannotScorch") and (modDB:Flag(nil, "ScorchingConflux") or modDB:Sum("BASE", nil, "ScorchChance") > 0 or modDB:Flag(nil, "CritAlwaysAltAilments") and not modDB:Flag(nil, "NeverCrit")) then
 			condList["CanInflictScorch"] = true
 		end
-		if modDB:Sum("BASE", nil, "BrittleChance") > 0 or modDB:Flag(nil, "CritAlwaysAltAilments") and not modDB:Flag(nil, "NeverCrit") then
+		if not modDB:Flag(nil, "CannotBrittle") and (modDB:Flag(nil, "BrittleConflux") or modDB:Sum("BASE", nil, "BrittleChance") > 0 or modDB:Flag(nil, "CritAlwaysAltAilments") and not modDB:Flag(nil, "NeverCrit")) then
 			condList["CanInflictBrittle"] = true
 		end
-		if modDB:Sum("BASE", nil, "SapChance") > 0 or modDB:Flag(nil, "CritAlwaysAltAilments") and not modDB:Flag(nil, "NeverCrit") then
+		if not modDB:Flag(nil, "CannotSap") and (modDB:Flag(nil, "SappingConflux") or modDB:Sum("BASE", nil, "SapChance") > 0 or modDB:Flag(nil, "CritAlwaysAltAilments") and not modDB:Flag(nil, "NeverCrit")) then
 			condList["CanInflictSap"] = true
 		end
 	end
@@ -585,10 +585,7 @@ local function doActorMisc(env, actor)
 			output.MaximumRage = modDB:Sum("BASE", skillCfg, "MaximumRage")
 			modDB:NewMod("Multiplier:Rage", "BASE", 1, "Base", { type = "Multiplier", var = "RageStack", limit = output.MaximumRage })
 		end
-		if modDB:Flag(nil, "Condition:ChillingConflux") or modDB:Flag(nil, "Condition:ElementalConflux") then
-			if modDB:Flag(nil, "Condition:ChillingConflux") then
-				condList["ChillingConflux"] = true
-			end
+		if modDB:Flag(nil, "ChillingConflux") or modDB:Flag(nil, "ElementalConflux") then
 			modDB:NewMod("PhysicalCanChill", "FLAG", true )
 			modDB:NewMod("LightningCanChill", "FLAG", true )
 			modDB:NewMod("FireCanChill", "FLAG", true )
