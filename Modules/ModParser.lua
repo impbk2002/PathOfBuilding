@@ -798,6 +798,7 @@ local preFlagList = {
 	["^warcry skills have "] = { tag = { type = "SkillType", skillType = SkillType.Warcry } },
 	["^non%-curse aura skills have "] = { tag = { type = "SkillType", skillType = SkillType.Aura } },
 	["^non%-channelling skills have "] = { tag = { type = "SkillType", skillType = SkillType.Channelled, neg = true } },
+	["^non%-vaal skills deal "] = { tag = { type = "SkillType", skillType = SkillType.Vaal, neg = true } },
 	["^skills [hdfg][aei][vari][eln] "] = { },
 	-- Slot specific
 	["^left ring slot: "] = { tag = { type = "SlotNumber", num = 1 } },
@@ -1057,9 +1058,9 @@ local modTagList = {
 	["while you have avian's might"] = { tag = { type = "Condition", var = "AffectedByAvian'sMight" } },
 	["while you have avian's flight"] = { tag = { type = "Condition", var = "AffectedByAvian'sFlight" } },
 	["while affected by aspect of the cat"] = { tag = { type = "Condition", varList = { "AffectedByCat'sStealth", "AffectedByCat'sAgility" } } },
-	["while affected by a non%-vaal guard skill"] = { tag = { type = "Condition", varList = { "AffectedByImmortalCall", "AffectedByMoltenShell", "AffectedBySteelskin" } } },
+	["while affected by a non%-vaal guard skill"] = { tag = { type = "Condition", var =  "AffectedByNonVaalGuardSkill" } },
 	["if a non%-vaal guard buff was lost recently"] = { tag = { type = "Condition", var = "LostNonVaalBuffRecently" } },
-	["while affected by a guard skill buff"] = { tag = { type = "Condition", varList = { "AffectedByImmortalCall", "AffectedByVaalImmortalCall", "AffectedByMoltenShell", "AffectedByVaalMoltenShell", "AffectedBySteelskin" } } },
+	["while affected by a guard skill buff"] = { tag = { type = "Condition", var = "AffectedByGuardSkill" } },
 	["while affected by a herald"] = { tag = { type = "Condition", var = "AffectedByHerald" } },
 	["while in blood stance"] = { tag = { type = "Condition", var = "BloodStance" } },
 	["while in sand stance"] = { tag = { type = "Condition", var = "SandStance" } },
@@ -1274,7 +1275,7 @@ local gemIdLookup = {
 	["power charge on critical strike"] = "SupportPowerChargeOnCrit",
 }
 for name, grantedEffect in pairs(data.skills) do
-	if not grantedEffect.hidden or grantedEffect.fromItem then
+	if not grantedEffect.hidden or grantedEffect.fromItem or grantedEffect.fromTree then
 		gemIdLookup[grantedEffect.name:lower()] = grantedEffect.id
 	end
 end
@@ -1481,6 +1482,7 @@ local specialModList = {
 		mod("Damage", "MORE", num, { type = "Multiplier", var = "EnduranceChargesLostRecently", limit = tonumber(limit), limitTotal = true }),
 	} end,
 	["(%d+)%% more damage if you've lost an endurance charge in the past 8 seconds"] = function(num) return { mod("Damage", "MORE", num, { type = "Condition", var = "LostEnduranceChargeInPast8Sec" })	} end,
+	["trigger level (%d+) (.+) when you attack with a non%-vaal slam skill near an enemy"] = function(num, _, skill) return extraSkill(skill, num) end,
 	-- Deadeye
 	["projectiles pierce all nearby targets"] = { flag("PierceAllTargets") },
 	["gain %+(%d+) life when you hit a bleeding enemy"] = function(num) return { mod("LifeOnHit", "BASE", num, { type = "ActorCondition", actor = "enemy", var = "Bleeding" }) } end,
@@ -1904,7 +1906,7 @@ local specialModList = {
 	-- Elemental Ailments
 	["your shocks can increase damage taken by up to a maximum of (%d+)%%"] = function(num) return { mod("ShockMax", "OVERRIDE", num) } end,
 	["your elemental damage can shock"] = { flag("ColdCanShock"), flag("FireCanShock") },
-	["all your damage can freeze"] = { flag("PhysicalCanFreeze"), flag("LightningCanFreeze"), flag("ColdCanFreeze"), flag("FireCanFreeze"), flag("ChaosCanFreeze") },
+	["all your damage can freeze"] = { flag("PhysicalCanFreeze"), flag("LightningCanFreeze"), flag("FireCanFreeze"), flag("ChaosCanFreeze") },
 	["your cold damage can ignite"] = { flag("ColdCanIgnite") },
 	["your lightning damage can ignite"] = { flag("LightningCanIgnite") },
 	["your fire damage can shock but not ignite"] = { flag("FireCanShock"), flag("FireCannotIgnite") },
@@ -2041,7 +2043,7 @@ local specialModList = {
 	["elemental damage with hits is lucky while you are shocked"] = { flag("ElementalLuckHits", { type = "Condition", var = "Shocked" }) },
 	["allies' aura buffs do not affect you"] = { flag("AlliesAurasCannotAffectSelf") },
 	["(%d+)%% increased effect of non%-curse auras from your skills on enemies"] = function(num) return {
-		mod("DebuffEffect", "INC", num, { type = "SkillType", skillType = SkillType.Aura }),
+		mod("DebuffEffect", "INC", num, { type = "SkillType", skillType = SkillType.Aura }, { type = "SkillType", skillType = SkillType.AppliesCurse, neg = true }),
 		mod("AuraEffect", "INC", num, { type = "SkillName", skillName = "Death Aura" }),
 	} end,
 	["enemies can have 1 additional curse"] = { mod("EnemyCurseLimit", "BASE", 1) },
@@ -3011,20 +3013,18 @@ local specialModList = {
 	["double strike has a (%d+)%% chance to deal double damage to bleeding enemies"] = function(num) return { mod("DoubleDamageChance", "BASE", num, { type = "ActorCondition", actor = "enemy", var = "Bleeding" }, { type = "SkillName", skillName = "Double Strike" }) } end,
 	["ethereal knives pierces an additional target"] = { mod("PierceCount", "BASE", 1, { type = "SkillName", skillName = "Ethereal Knives" }) },
 	["frost bomb has (%d+)%% increased debuff duration"] = function(num) return { mod("SecondaryDuration", "INC", num, { type = "SkillName", skillName = "Frost Bomb" }) } end,
-	["incinerate has %+(%d+) to maximum stages"] = function(num) return {
-		mod("Multiplier:IncinerateStage", "BASE", num / 2, 0, 0, { type = "SkillPart", skillPart = 2 }),
-		mod("Multiplier:IncinerateStage", "BASE", num, 0, 0, { type = "SkillPart", skillPart = 3 }),
-	} end,
+	["incinerate has %+(%d+) to maximum stages"] = function(num) return { mod("Multiplier:IncinerateMaxStages", "BASE", num, { type = "SkillName", skillName = "Incinerate" }) } end,
 	["perforate creates %+(%d+) spikes?"] = function(num) return { mod("Multiplier:PerforateMaxSpikes", "BASE", num) } end,
 	["scourge arrow has (%d+)%% chance to poison per stage"] = function(num) return { mod("PoisonChance", "BASE", num, { type = "SkillName", skillName = "Scourge Arrow" }, { type = "Multiplier", var = "ScourgeArrowStage" }) } end,
-	["winter orb has %+(%d+) maximum stages"] = function(num) return { mod("Multiplier:WinterOrbMaxStage", "BASE", num) } end,
+	["winter orb has %+(%d+) maximum stages"] = function(num) return { mod("Multiplier:WinterOrbMaxStagesAfterFirst", "BASE", num) } end,
 	["%+(%d) to maximum virulence"] = function(num) return { mod("Multiplier:VirulenceStacksMax", "BASE", num) } end,
 	["winter orb has (%d+)%% increased area of effect per stage"] = function(num) return { mod("AreaOfEffect", "INC", num, { type = "SkillName", skillName = "Winter Orb" }, { type = "Multiplier", var = "WinterOrbStage" }) } end,
-	["wintertide brand has %+(%d+) to maximum stages"] = function(num) return { mod("Multiplier:WintertideBrandMaxStage", "BASE", num, { type = "SkillName", skillName = "Wintertide Brand" }) } end,
+	["wintertide brand has %+(%d+) to maximum stages"] = function(num) return { mod("Multiplier:WintertideBrandMaxStages", "BASE", num, { type = "SkillName", skillName = "Wintertide Brand" }) } end,
 	["wave of conviction's exposure applies (%-%d+)%% elemental resistance"] = function(num) return { mod("ExtraSkillStat", "LIST", { key = "purge_expose_resist_%_matching_highest_element_damage", value = num }, { type = "SkillName", skillName = "Wave of Conviction" }) } end,
 	["arcane cloak spends an additional (%d+)%% of current mana"] = function(num) return { mod("ExtraSkillStat", "LIST", { key = "arcane_cloak_consume_%_of_mana", value = num }, { type = "SkillName", skillName = "Arcane Cloak" }) } end,
 	["caustic arrow has (%d+)%% chance to inflict withered on hit for (%d+) seconds base duration"] = { mod("ExtraSkillMod", "LIST", { mod = mod("Condition:CanWither", "FLAG", true) }, { type = "SkillName", skillName = "Caustic Arrow" } ) },
 	["venom gyre has a (%d+)%% chance to inflict withered for (%d+) seconds on hit"] = { mod("ExtraSkillMod", "LIST", { mod = mod("Condition:CanWither", "FLAG", true) }, { type = "SkillName", skillName = "Venom Gyre" } ) },
+	["sigil of power's buff also grants (%d+)%% increased critical strike chance per stage"] = function(num) return { mod("CritChance", "INC", num, 0, 0, { type = "Multiplier", var = "SigilOfPowerStage", limit = 4 }, { type = "GlobalEffect", effectType = "Buff", effectName = "Sigil of Power" } ) } end,
 	-- Alternate Quality
 	["quality does not increase physical damage"] = { mod("AlternateQualityWeapon", "BASE", 1) },
 	["(%d+)%% increased critical strike chance per 4%% quality"] = function(num) return { mod("AlternateQualityLocalCritChancePer4Quality", "INC", num) } end,
@@ -3043,11 +3043,10 @@ local specialModList = {
 	["grants %+(%d+)%% to cold resistance per (%d+)%% quality"] = function(num, _, div) return { mod("ColdResist", "BASE", num, { type = "Multiplier", var = "QualityOn{SlotName}", div = tonumber(div) }) } end,
 	["grants %+(%d+)%% to lightning resistance per (%d+)%% quality"] = function(num, _, div) return { mod("LightningResist", "BASE", num, { type = "Multiplier", var = "QualityOn{SlotName}", div = tonumber(div) }) } end,
 	["infernal blow debuff deals an additional (%d+)%% of damage per charge"] = function(num) return { mod("DebuffEffect", "BASE", num, { type = "SkillName", skillName = "Infernal Blow"}) } end,
-	
-	-- Quality modify
-	["%+(%d+)%% to quality"] = function(num) return { mod("Quality", "BASE", num ) } end,
-	["%+(%d+)%% to maximum quality"] = function(num) return { mod("Quality", "BASE", num ) } end,
-	["(%d+)%% to maximum quality"] = function(num) return { mod("Quality", "BASE", num ) } end,
+	-- Quality modifiers
+	["%+(%d+)%% to quality"] = function(num) return { mod("Quality", "BASE", num) } end,
+	["%+(%d+)%% to maximum quality"] = function(num) return { mod("Quality", "BASE", num) } end,
+	["(%d+)%% to maximum quality"] = function(num) return { mod("Quality", "BASE", num) } end,
 	-- Display-only modifiers
 	["extra gore"] = { },
 	["prefixes:"] = { },
@@ -3465,6 +3464,7 @@ local jewelThresholdFuncs = {
 	["With 40 total Dexterity and Strength in Radius, Spectral Shield Throw fires 75% less Shard Projectiles"] = getThreshold({ "Dex","Str" }, "ProjectileCount", "MORE", -75, { type = "SkillName", skillName = "Spectral Shield Throw" }),
 	["With at least 40 Intelligence in Radius, Blight inflicts Withered for 2 seconds"] = getThreshold("Int", "ExtraSkillMod", "LIST", { mod = mod("Condition:CanWither", "FLAG", true) }, { type = "SkillName", skillName = "Blight" }),
 	["With at least 40 Intelligence in Radius, Fireball cannot ignite"] = getThreshold("Int", "ExtraSkillMod", "LIST", { mod = mod("CannotIgnite", "FLAG", true) }, { type = "SkillName", skillName = "Fireball" }),
+	["With at least 40 Intelligence in Radius, Fireball has %+(%d+)%% chance to inflict scorch"] = function(num) return getThreshold("Int", "ScorchChance", "BASE", num, { type = "SkillName", skillName = "Fireball" }) end,
 	["With at least 40 Intelligence in Radius, Discharge has 60% less Area of Effect"] = getThreshold("Int", "AreaOfEffect", "MORE", -60, {type = "SkillName", skillName = "Discharge" }),
 	["With at least 40 Intelligence in Radius, Discharge Cooldown is 250 ms"] = getThreshold("Int", "CooldownRecovery", "OVERRIDE", 0.25, { type = "SkillName", skillName = "Discharge" }),
 	["With at least 40 Intelligence in Radius, Discharge deals 60% less Damage"] = getThreshold("Int", "Damage", "MORE", -60, {type = "SkillName", skillName = "Discharge" }),

@@ -63,7 +63,6 @@ end
 -- Parse raw item data and extract item name, base type, quality, and modifiers
 function ItemClass:ParseRaw(raw)
 	self.raw = raw
-	local data = data
 	self.name = "?"
 	self.rarity = "UNIQUE"
 	self.quality = nil
@@ -97,82 +96,23 @@ function ItemClass:ParseRaw(raw)
 	end
 	if self.rawLines[l] then
 		self.name = self.rawLines[l]
-		l = l + 1
-	end
-	self.namePrefix = ""
-	self.nameSuffix = ""
-	if self.rarity == "NORMAL" or self.rarity == "MAGIC" then
-		for baseName, baseData in pairs(data.itemBases) do
-			local s, e = self.name:find(baseName, 1, true)
-			if s then
-				self.baseName = baseName
-				self.namePrefix = self.name:sub(1, s - 1)
-				self.nameSuffix = self.name:sub(e + 1)
-				self.type = baseData.type
-				break
-			end
-		end
-		if not self.baseName then
-			local s, e = self.name:find("Two-Toned Boots", 1, true)
-			if s then
-				-- Hack for Two-Toned Boots
-				self.baseName = "Two-Toned Boots (Armour/Energy Shield)"
-				self.namePrefix = self.name:sub(1, s - 1)
-				self.nameSuffix = self.name:sub(e + 1)
-				self.type = "Boots"
-			end
-		end
-		self.name = self.name:gsub(" %(.+%)","")
-	elseif self.rawLines[l] and not self.rawLines[l]:match("^%-") then
-		if self.rawLines[l] == "Two-Toned Boots" then
-			self.rawLines[l] = "Two-Toned Boots (Armour/Energy Shield)"
-		end
-		local baseName = self.rawLines[l]:gsub("Synthesised ","")
-		if data.itemBases[baseName] then
-			self.baseName = baseName
-			self.title = self.name
-			self.name = self.title .. ", " .. baseName:gsub(" %(.+%)","")
-			self.type = data.itemBases[baseName].type
+		-- Found the name for a rare or unique, but let's parse it if it's a magic or normal item to get the base
+		if not (self.rarity == "NORMAL" or self.rarity == "MAGIC") then
 			l = l + 1
 		end
 	end
-	self.base = data.itemBases[self.baseName]
 	self.sockets = { }
 	self.buffModLines = { }
 	self.enchantModLines = { }
 	self.implicitModLines = { }
 	self.explicitModLines = { }
 	local implicitLines = 0
-	if self.base then
-		self.affixes = (self.base.subType and data.itemMods[self.base.type..self.base.subType])
-			or data.itemMods[self.base.type]
-			or data.itemMods.Item
-		self.enchantments = data.enchantments[self.base.type]
-		self.corruptable = self.base.type ~= "Flask" and self.base.subType ~= "Cluster"
-		self.influenceTags = data.specialBaseTags[self.type]
-		self.canBeInfluenced = self.influenceTags
-		self.clusterJewel = data.clusterJewels and data.clusterJewels.jewels[self.baseName]
-	end
 	self.variantList = nil
 	self.prefixes = { }
 	self.suffixes = { }
 	self.requirements = { }
-	if self.base then
-		self.requirements.str = self.base.req.str or 0
-		self.requirements.dex = self.base.req.dex or 0
-		self.requirements.int = self.base.req.int or 0
-		local maxReq = m_max(self.requirements.str, self.requirements.dex, self.requirements.int)
-		self.defaultSocketColor = (maxReq == self.requirements.dex and "G") or (maxReq == self.requirements.int and "B") or "R"
-	end
 	local importedLevelReq
-	local flaskBuffLines = { }
-	if self.base and self.base.flask and self.base.flask.buff then
-		for _, line in ipairs(self.base.flask.buff) do
-			flaskBuffLines[line] = true
-			local modList, extra = modLib.parseMod(line)
-			t_insert(self.buffModLines, { line = line, extra = extra, modList = modList or { } })
-		end
-	end
+	local flaskBuffLines
 	local deferJewelRadiusIndexAssignment
 	local gameModeStage = "FINDIMPLICIT"
 	local foundExplicit, foundImplicit
@@ -189,7 +129,7 @@ function ItemClass:ParseRaw(raw)
 
 	while self.rawLines[l] do	
 		local line = self.rawLines[l]
-		if flaskBuffLines[line] then
+		if flaskBuffLines and flaskBuffLines[line] then
 			flaskBuffLines[line] = nil
 		elseif line == "--------" then
 			if gameModeStage == "IMPLICIT" then
@@ -370,6 +310,81 @@ function ItemClass:ParseRaw(raw)
 						variantList[tonumber(varId)] = true
 					end
 				end
+				if line:gsub("({variant:[%d,]+})", "") == "Two-Toned Boots" then
+					line = "Two-Toned Boots (Armour/Energy Shield)"
+				end
+				self.namePrefix = self.namePrefix or ""
+				self.nameSuffix = self.nameSuffix or ""
+				if self.rarity == "NORMAL" or self.rarity == "MAGIC" then
+					-- Exact match (affix-less magic and normal items)
+					if data.itemBases[self.name] then
+						self.baseName = self.name
+						self.type = data.itemBases[self.name].type
+					else
+						-- Partial match (magic items with affixes)
+						for baseName, baseData in pairs(data.itemBases) do
+							local s, e = self.name:find(baseName, 1, true)
+							if s then
+								-- Set the base name if it isn't there, or we found a better match, so replace it
+								if (self.baseName and string.len(self.namePrefix) > string.len(self.name:sub(1, s - 1)))
+										or self.baseName == nil or self.baseName == "" then
+									self.namePrefix = self.name:sub(1, s - 1)
+									self.nameSuffix = self.name:sub(e + 1)
+									self.baseName = baseName
+									self.type = baseData.type
+								end
+							end
+						end
+					end
+					if not self.baseName then
+						local s, e = self.name:find("Two-Toned Boots", 1, true)
+						if s then
+							-- Hack for Two-Toned Boots
+							self.baseName = "Two-Toned Boots (Armour/Energy Shield)"
+							self.namePrefix = self.name:sub(1, s - 1)
+							self.nameSuffix = self.name:sub(e + 1)
+							self.type = "Boots"
+						end
+					end
+					self.name = self.name:gsub(" %(.+%)","")
+				end
+				local baseName = self.baseName or ""
+				if self.variant and varSpec then
+					if tonumber(varSpec) == self.variant then
+						baseName = line:gsub("Synthesised ",""):gsub("{variant:([%d,]+)}", "")
+					end
+				elseif baseName == "" then
+					baseName = line:gsub("Synthesised ",""):gsub("{variant:([%d,]+)}", "")
+				end
+				if baseName and data.itemBases[baseName] then
+					self.baseName = baseName
+					if not (self.rarity == "NORMAL" or self.rarity == "MAGIC") then
+						self.title = self.name
+					end
+					self.type = data.itemBases[baseName].type
+					self.base = data.itemBases[self.baseName]
+					self.affixes = (self.base.subType and data.itemMods[self.base.type..self.base.subType])
+							or data.itemMods[self.base.type]
+							or data.itemMods.Item
+					self.enchantments = data.enchantments[self.base.type]
+					self.corruptable = self.base.type ~= "Flask" and self.base.subType ~= "Cluster"
+					self.influenceTags = data.specialBaseTags[self.type]
+					self.canBeInfluenced = self.influenceTags
+					self.clusterJewel = data.clusterJewels and data.clusterJewels.jewels[self.baseName]
+					self.requirements.str = self.base.req.str or 0
+					self.requirements.dex = self.base.req.dex or 0
+					self.requirements.int = self.base.req.int or 0
+					local maxReq = m_max(self.requirements.str, self.requirements.dex, self.requirements.int)
+					self.defaultSocketColor = (maxReq == self.requirements.dex and "G") or (maxReq == self.requirements.int and "B") or "R"
+					if self.base.flask and self.base.flask.buff and not flaskBuffLines then
+						flaskBuffLines = { }
+						for _, line in ipairs(self.base.flask.buff) do
+							flaskBuffLines[line] = true
+							local modList, extra = modLib.parseMod(line)
+							t_insert(self.buffModLines, { line = line, extra = extra, modList = modList or { } })
+						end
+					end
+				end
 				local fractured = line:match("{fractured}") or line:match(" %(fractured%)")
 				local rangeSpec = line:match("{range:([%d.]+)}")
 				local enchant = line:match(" %(enchant%)")
@@ -454,6 +469,9 @@ function ItemClass:ParseRaw(raw)
 			end
 		end
 		l = l + 1
+	end
+	if self.baseName and self.title then
+		self.name = self.title .. ", " .. self.baseName:gsub(" %(.+%)","")
 	end
 	if self.base and not self.requirements.level then
 		if importedLevelReq and #self.sockets == 0 then
@@ -621,6 +639,18 @@ function ItemClass:BuildRaw()
 		end
 		t_insert(rawLines, "Selected Variant: "..self.variant)
 
+		local hasVariantBases = false
+		local i = 1
+		for _, variantName in ipairs(self.variantList) do
+			if data.itemBases[variantName] then
+				t_insert(rawLines, "{variant:"..i.."}"..variantName)
+				hasVariantBases = true
+			end
+			i = i + 1
+		end
+		if not hasVariantBases then
+			t_insert(rawLines, self.baseName)
+		end
 		if self.hasAltVariant then
 			t_insert(rawLines, "Has Alt Variant: true")
 			t_insert(rawLines, "Selected Alt Variant: "..self.variantAlt)
@@ -855,7 +885,7 @@ function ItemClass:BuildModListForSlotNum(baseList, slotNum)
 			end
 		end
 	end
-	local extraQuality = sumLocal(modList,"Quality","BASE",0)
+	local extraQuality = sumLocal(modList, "Quality", "BASE", 0)
 	if self.quality then
 		modList:NewMod("Multiplier:QualityOn"..slotName, "BASE", self.quality + extraQuality, "Quality")
 	end
@@ -864,7 +894,7 @@ function ItemClass:BuildModListForSlotNum(baseList, slotNum)
 		self.weaponData[slotNum] = weaponData
 		weaponData.type = self.base.type
 		weaponData.name = self.name
-		weaponData.quality = extraQuality+self.quality
+		weaponData.quality = extraQuality + self.quality
 		weaponData.AttackSpeedInc = sumLocal(modList, "Speed", "INC", ModFlag.Attack) + m_floor(weaponData.quality / 8 * sumLocal(modList, "AlternateQualityLocalAttackSpeedPer8Quality", "INC", 0))
 		weaponData.AttackRate = round(self.base.weapon.AttackRateBase * (1 + weaponData.AttackSpeedInc / 100), 2)
 		weaponData.range = self.base.weapon.Range + sumLocal(modList, "WeaponRange", "BASE", 0) + m_floor(weaponData.quality / 10 * sumLocal(modList, "AlternateQualityLocalWeaponRangePer10Quality", "BASE", 0))
