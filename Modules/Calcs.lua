@@ -125,7 +125,7 @@ function calcs.buildOutput(build, mode)
 
 	if mode == "MAIN" then
 		output.ExtraPoints = env.modDB:Sum("BASE", nil, "ExtraPoints")
-
+		output.AscExtras = env.modDB:Sum("BASE", nil, "AscExtras")
 		local specCfg = {
 			source = "Tree"
 		}
@@ -301,6 +301,34 @@ function calcs.buildOutput(build, mode)
 		if env.modDB:Flag(nil, "HerEmbrace") then
 			t_insert(combatList, "Her Embrace")
 		end
+		if env.modDB:Flag(nil, "ArcaneSurge") and not env.modDB:Flag(nil, "Condition:HaveArcaneSurge") then
+			t_insert(combatList, "Arcane Surge")
+		end
+		if env.modDB:Flag(nil, "FreezingConflux") then
+			t_insert(combatList, "FreezingConflux")
+		end
+		if env.modDB:Flag(nil, "ElementalConflux") then
+			t_insert(combatList, "Elemental Conflux")
+		else
+			if env.modDB:Flag(nil, "ChillingConflux") then
+				t_insert(combatList, "Chilling Conflux")
+			end
+			if env.modDB:Flag(nil, "IgnitingConflux") then
+				t_insert(combatList, "Igniting Conflux")
+			end
+			if env.modDB:Flag(nil, "ShockingConflux") then
+				t_insert(combatList, "Shocking Conflux")
+			end
+		end
+		if env.modDB:Flag(nil, "ScorchingConflux") then
+			t_insert(combatList, "Scorching Conflux")
+		end
+		if env.modDB:Flag(nil, "BrittleConflux") then
+			t_insert(combatList, "Brittle Conflux")
+		end
+		if env.modDB:Flag(nil, "SappingConflux") then
+			t_insert(combatList, "Sapping Conflux")
+		end
 		for name in pairs(env.buffs) do
 			t_insert(buffList, name)
 		end
@@ -380,6 +408,43 @@ function calcs.buildOutput(build, mode)
 			end
 			if env.minion.modDB:Flag(nil, "Tailwind") then
 				t_insert(combatList, "Tailwind")
+			end
+			if env.minion.modDB:Flag(nil, "Elusive") then
+				t_insert(combatList, "Elusive")
+			end
+			if env.minion.modDB:Flag(nil, "Adrenaline") then
+				t_insert(combatList, "Adrenaline")
+			end
+			if env.minion.modDB:Flag(nil, "AlchemistsGenius") then
+				t_insert(combatList, "Alchemist's Genius")
+			end
+			if env.minion.modDB:Flag(nil, "ArcaneSurge") then
+				t_insert(combatList, "Arcane Surge")
+			end
+			if env.minion.modDB:Flag(nil, "FreezingConflu") then
+				t_insert(combatList, "Freezing Conflux")
+			end
+			if env.minion.modDB:Flag(nil, "ElementalConflux") then
+				t_insert(combatList, "Elemental Conflux")
+			else
+				if env.minion.modDB:Flag(nil, "ChillingConflux") then
+					t_insert(combatList, "Chilling Conflux")
+				end
+				if env.minion.modDB:Flag(nil, "IgnitingConflux") then
+					t_insert(combatList, "Igniting Conflux")
+				end
+				if env.minion.modDB:Flag(nil, "ShockingConflux") then
+					t_insert(combatList, "Shocking Conflux")
+				end
+			end
+			if env.minion.modDB:Flag(nil, "ScorchingConflux") then
+				t_insert(combatList, "Scorching Conflux")
+			end
+			if env.minion.modDB:Flag(nil, "BrittleConflux") then
+				t_insert(combatList, "Brittle Conflux")
+			end
+			if env.minion.modDB:Flag(nil, "SappingConflux") then
+				t_insert(combatList, "Sapping Conflux")
 			end
 			for name in pairs(env.minionBuffs) do
 				t_insert(buffList, name)

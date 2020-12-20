@@ -351,7 +351,7 @@ return {
 	mod("AuraEffect", "INC", nil),
 },
 ["elusive_effect_+%"] = {
-	mod("ElusiveEffect", "INC", nil, 0, 0, { type = "GlobalEffect", effectType = "Buff" }),
+	mod("ElusiveEffect", "INC", nil, 0, 0, { type = "GlobalEffect", effectType = "Modifier" }),
 },
 ["cannot_be_stunned_while_leeching"] = {
 	mod("AvoidStun", "BASE", 100, { type = "Condition", var = "Leeching"}),
@@ -1006,11 +1006,11 @@ return {
 	flag("PierceAllTargets", { type = "Condition", var = "ReturningProjectile" }),
 },
 ["support_barrage_attack_time_+%_per_projectile_fired"] = {
-	mod("SkillAttackTime", "MORE", nil, 0, 0, { type = "Condition", varList = { "UsingBow", "UsingWand" }}, { type = "PerStat", stat = "ProjectileCount" }),
+	mod("SkillAttackTime", "INC", nil, 0, 0, { type = "Condition", varList = { "UsingBow", "UsingWand" }}, { type = "PerStat", stat = "ProjectileCount" }),
 },
 ["support_barrage_trap_and_mine_throwing_time_+%_final_per_projectile_fired"] = {
-	mod("SkillMineThrowingTime", "MORE", nil, 0, 0, { type = "PerStat", stat = "ProjectileCount" }),
-	mod("SkillTrapThrowingTime", "MORE", nil, 0, 0, { type = "PerStat", stat = "ProjectileCount" }),
+	mod("SkillMineThrowingTime", "INC", nil, 0, 0, { type = "PerStat", stat = "ProjectileCount" }),
+	mod("SkillTrapThrowingTime", "INC", nil, 0, 0, { type = "PerStat", stat = "ProjectileCount" }),
 },
 -- Self modifiers
 ["chance_to_be_pierced_%"] = {

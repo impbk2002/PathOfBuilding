@@ -130,6 +130,26 @@ local function doActorAttribsPoolsConditions(env, actor)
 			end
 		end
 	end
+	if modDB:Flag(nil, "Condition:WeaponMaster") then
+		condList["UsingShield"] = true
+		condList["OffHandIsEmpty"] = true
+		condList["Unencumbered"] = true
+		condList["Unarmed"] = true
+		condList["UsingAxe"] = true
+		condList["UsingSword"] = true
+		condList["UsingDagger"] = true
+		condList["UsingMace"] = true
+		condList["UsingClaw"] = true
+		condList["UsingMeleeWeapon"] = true
+		condList["UsingOneHandedWeapon"] = true
+		condList["UsingTwoHandedWeapon"] = true
+		condList["UsingStaff"] = true
+		condList["UsingBow"] = true
+		condList["UsingWand"] = true
+		condList["DualWielding"] = true
+		condList["DualWieldingClaws"] = true
+		condList["WieldingDifferentWeaponTypes"] = true
+	end	
 	if env.mode_combat then		
 		if not modDB:Flag(nil, "NeverCrit") then
 			condList["CritInPast8Sec"] = true
@@ -195,6 +215,7 @@ local function doActorAttribsPoolsConditions(env, actor)
 		end
 		
 		output.LowestAttribute = m_min(output.Str, output.Dex, output.Int)
+		condList["TwoHighestAttributesAreEqual"] = ( (output.Int == output.Dex) and (m_max(output.Str, output.Dex, output.Int)== output.Dex ) ) or ( (output.Dex == output.Str) and (m_max(output.Str, output.Dex, output.Int)== output.Str ) ) or ( (output.Str == output.Int) and (m_max(output.Str, output.Dex, output.Int)== output.Int ) )
 		condList["DexHigherThanInt"] = output.Dex > output.Int
 		condList["StrHigherThanDex"] = output.Str > output.Dex
 		condList["IntHigherThanStr"] = output.Int > output.Str
@@ -407,6 +428,32 @@ local function doActorMisc(env, actor)
 
 	-- Add misc buffs/debuffs
 	if env.mode_combat then
+		if modDB:Sum("BASE", nil, "AvoidBlind") >= 100 and modDB:Flag(nil, "Condition:Blinded") then
+			modDB:NewMod("Condition:IgnoreBlind", "FLAG", true)
+			modDB:ReplaceMod("Condition:Blinded", "FLAG", false, "Config" )
+		end
+		if modDB:Sum("BASE", nil, "AvoidShock") >= 100 and modDB:Flag(nil, "Condition:Shocked") then
+			modDB:NewMod("Condition:IgnoreShock", "FLAG", true)
+			modDB:ReplaceMod("Condition:Shocked", "FLAG", false, "Config" )
+		end
+		if modDB:Sum("BASE", nil, "AvoidIgnite") >= 100 and modDB:Flag(nil, "Condition:Ignited") then
+			modDB:ReplaceMod("Condition:Ignited", "FLAG", false, "Config" )
+		end
+		if modDB:Sum("BASE", nil, "AvoidChill") >= 100 and modDB:Flag(nil, "Condition:Chilled") then
+			modDB:NewMod("Condition:IgnoreChill", "FLAG", true)
+			modDB:ReplaceMod("Condition:Chilled", "FLAG", false, "Config" )
+		end
+		if modDB:Sum("BASE", nil, "AvoidFreeze") >= 100 and modDB:Flag(nil, "Condition:Frozen") then
+			modDB:NewMod("Condition:IgnoreFreeze", "FLAG", true)
+			modDB:ReplaceMod("Condition:Frozen", "FLAG", false, "Config" )
+		end
+		if modDB:Sum("BASE", nil, "AvoidBleed") >= 100 and modDB:Flag(nil, "Condition:Bleeding") then
+			modDB:ReplaceMod("Condition:Bleeding", "FLAG", false, "Config" )
+		end
+		if modDB:Sum("BASE", nil, "AvoidPoison") >= 100 and modDB:Flag(nil, "Condition:Poisoned") then
+			modDB:NewMod("Condition:IgnorePoison", "FLAG", true)
+			modDB:ReplaceMod("Condition:Poisoned", "FLAG", false, "Config" )
+		end
 		if modDB:Flag(nil, "Fortify") then
 			local effectScale = 1 + modDB:Sum("INC", nil, "FortifyEffectOnSelf", "BuffEffectOnSelf") / 100
 			local modList = modDB:List(nil, "convertFortifyBuff")
@@ -464,16 +511,25 @@ local function doActorMisc(env, actor)
 		end
 		if modDB:Flag(nil, "Blind") then
 			if not modDB:Flag(nil, "IgnoreBlindHitChance") then
-				modDB:NewMod("HitChance", "MORE", -50, "Blind")
+				modDB:NewMod("HitChance", "MORE", -50, "Blind", { type = "GlobalEffect", effectType = "Debuff"} )
 			end
 		end
 		if modDB:Flag(nil, "Chill") then
-			local effect = m_max(m_floor(30 * calcLib.mod(modDB, nil, "SelfChillEffect")), 0)
-			modDB:NewMod("ActionSpeed", "INC", effect * (modDB:Flag(nil, "SelfChillEffectIsReversed") and 1 or -1), "Chill")
+			if not modDB:Flag(nil, "IgnoreChillEffect") then
+				local effect = m_max(m_floor(30 * calcLib.mod(modDB, nil, "SelfChillEffect")), 0)
+				modDB:NewMod("ActionSpeed", "INC", effect * (modDB:Flag(nil, "SelfChillEffectIsReversed") and 1 or -1), "Chill")
+			end
 		end
 		if modDB:Flag(nil, "Freeze") then
-			local effect = m_max(m_floor(70 * calcLib.mod(modDB, nil, "SelfChillEffect")), 0)
-			modDB:NewMod("ActionSpeed", "INC", -effect, "Freeze")
+			local effect = m_max(m_floor(70 * calcLib.mod(modDB, nil, "SelfChillEffect","FreezeEffectOnSelf")), 0)
+			modDB:NewMod("ActionSpeed", "INC", -effect, "Freeze", { type = "GlobalEffect", effectType = "Debuff"} )
+		end
+		if modDB:Flag(nil, "Condition:Shocked") and not ( modDB:Flag(nil,"Condition:AlreadyShocked") ) then
+			if not modDB:Flag(nil, "IgnoreShockEffect") then
+				local effect = modDB:Override(nil, "SelfShockEffect") or 15
+				effect = m_max( m_min( 50, effect*calcLib.mod(modDB, nil, "SelfShockEffect") ), 0 )
+				modDB:NewMod("DamageTaken", "INC", effect, "Shock", { type = "Condition", var = "Shocked" })
+			end
 		end
 		if modDB:Flag(nil, "CanLeechLifeOnFullLife") then
 			condList["Leeching"] = true
@@ -485,6 +541,18 @@ local function doActorMisc(env, actor)
 			condList["LeechingEnergyShield"] = true
 			env.configInput.conditionLeeching = true
 		end
+		if modDB:Flag(nil, "ArcaneSurge") then
+			if not modDB:Flag(nil, "Condition:HaveArcaneSurge") then
+				local effectMod = m_floor(10*(1 + modDB:Sum("INC", nil, "ArcaneSurgeEffect", "BuffEffectOnSelf") / 100))
+				if modDB:Flag(nil, "level21ArcaneSurgeBuff") then
+					effectMod = m_floor(20*(1 + modDB:Sum("INC", nil, "ArcaneSurgeEffect", "BuffEffectOnSelf") / 100))
+				end
+				modDB:NewMod("Damage", "MORE", effectMod, "Arcane Surge", ModFlag.Spell, { type = "GlobalEffect", effectType = "Buff"} )
+				modDB:NewMod("Speed", "INC", effectMod, "Arcane Surge", ModFlag.Cast, { type = "GlobalEffect", effectType = "Buff"})
+				effectMod = effectMod/20
+				modDB:NewMod("ManaRegenPercent", "BASE", effectMod, "Arcane Surge", { type = "GlobalEffect", effectType = "Buff"} )
+			end
+		end		
 		if modDB:Flag(nil, "Condition:InfusionActive") then
 			local effect = 1 + modDB:Sum("INC", nil, "InfusionEffect", "BuffEffectOnSelf") / 100
 			if modDB:Flag(nil, "Condition:HavePhysicalInfusion") then
@@ -516,6 +584,65 @@ local function doActorMisc(env, actor)
 		if modDB:Flag(nil, "Condition:CanGainRage") or modDB:Sum("BASE", nil, "RageRegen") > 0 then
 			output.MaximumRage = modDB:Sum("BASE", skillCfg, "MaximumRage")
 			modDB:NewMod("Multiplier:Rage", "BASE", 1, "Base", { type = "Multiplier", var = "RageStack", limit = output.MaximumRage })
+		end
+		if modDB:Flag(nil, "Condition:ChillingConflux") or modDB:Flag(nil, "Condition:ElementalConflux") then
+			if modDB:Flag(nil, "Condition:ChillingConflux") then
+				condList["ChillingConflux"] = true
+			end
+			modDB:NewMod("PhysicalCanChill", "FLAG", true )
+			modDB:NewMod("LightningCanChill", "FLAG", true )
+			modDB:NewMod("FireCanChill", "FLAG", true )
+			modDB:NewMod("ChaosCanChill", "FLAG", true )
+		end
+		if modDB:Flag(nil, "ShockingConflux") or modDB:Flag(nil, "ElementalConflux") then
+			modDB:NewMod("PhysicalCanShock", "FLAG", true )
+			modDB:NewMod("ColdCanShock", "FLAG", true )
+			modDB:NewMod("FireCanShock", "FLAG", true )
+			modDB:NewMod("ChaosCanShock", "FLAG", true )
+		end
+		if modDB:Flag(nil, "IgnitingConflux") or modDB:Flag(nil, "ElementalConflux") then
+			modDB:NewMod("PhysicalCanIgnite", "FLAG", true )
+			modDB:NewMod("ColdCanIgnite", "FLAG", true )
+			modDB:NewMod("LightningCanIgnite", "FLAG", true )
+			modDB:NewMod("ChaosCanIgnite", "FLAG", true )
+		end
+		if modDB:Flag(nil, "ShockingConflux") then
+			modDB:NewMod("EnemyShockChance", "BASE", 100, "Shocking Conflux" )
+		end
+		if modDB:Flag(nil, "IgnitingConflux") then
+			modDB:NewMod("EnemyIgniteChance", "BASE", 100, "Igniting Conflux" )
+		end
+		if modDB:Flag(nil, "FreezingConflux") then
+			modDB:NewMod("EnemyFreezeChance", "BASE", 100, "Freezing Conflux" )
+			modDB:NewMod("PhysicalCanFreeze", "FLAG", true )
+			modDB:NewMod("LightningCanFreeze", "FLAG", true )
+			modDB:NewMod("FireCanFreeze", "FLAG", true )
+			modDB:NewMod("ChaosCanFreeze", "FLAG", true )
+		end
+		if modDB:Flag(nil, "ElementalConflux") then
+			modDB:NewMod("EnemyIgniteChance", "BASE", 100, "Elemental Conflux" )
+			modDB:NewMod("EnemyShockChance", "BASE", 100, "Elemental Conflux" )
+		end
+		if modDB:Flag(nil, "Condition:ScorchingConflux") then
+			modDB:NewMod("ScorchChance", "BASE", 100, "Scorching Conflux" )
+			modDB:NewMod("PhysicalCanScorch", "FLAG", true )
+			modDB:NewMod("ColdCanScorch", "FLAG", true )
+			modDB:NewMod("LightningCanScorch", "FLAG", true )
+			modDB:NewMod("ChaosCanScorch", "FLAG", true )
+		end
+		if modDB:Flag(nil, "BrittleConflux") then
+			modDB:NewMod("BrittleChance", "BASE", 100, "Brittle Conflux" )
+			modDB:NewMod("FireCanBrittle", "FLAG", true )
+			modDB:NewMod("PhysicalCanBrittle", "FLAG", true )
+			modDB:NewMod("LightningCanBrittle", "FLAG", true )
+			modDB:NewMod("ChaosCanBrittle", "FLAG", true )
+		end
+		if modDB:Flag(nil, "SappingConflux") then
+			modDB:NewMod("SapChance", "BASE", 100, "Sapping Conflux" )
+			modDB:NewMod("FireCanSap", "FLAG", true )
+			modDB:NewMod("PhysicalCanSap", "FLAG", true )
+			modDB:NewMod("ColdCanSap", "FLAG", true )
+			modDB:NewMod("ChaosCanSap", "FLAG", true )
 		end
 		if modDB:Sum("BASE", nil, "CoveredInAshEffect") > 0 then
 			local effect = modDB:Sum("BASE", nil, "CoveredInAshEffect")
@@ -1268,6 +1395,21 @@ function calcs.perform(env)
 					end
 					t_insert(curses, curse)	
 				end
+			elseif buff.type or false then
+				if env.mode_buffs then
+					local skillCfg = buff.activeSkillBuff and skillCfg
+					local modStore = buff.activeSkillBuff and skillModList or modDB
+					if not buff.applyNotPlayer then
+						activeSkill.buffSkill = true
+						modDB.conditions["AffectedBy"..buff.name:gsub(" ","")] = true
+						mergeBuff(buff.modList, buffs, buff.name)
+					end
+					if env.minion and (buff.applyMinions or buff.applyAllies) then
+						activeSkill.minionBuffSkill = true
+						env.minion.modDB.conditions["AffectedBy"..buff.name:gsub(" ","")] = true
+						mergeBuff(buff.modList, minionBuffs, buff.name)
+					end
+				end
 			end
 		end
 		if activeSkill.minion then
@@ -1549,7 +1691,7 @@ function calcs.perform(env)
 	-- Calculates maximum Shock, then applies the strongest Shock effect to the enemy
 	if (enemyDB:Sum("BASE", nil, "ShockVal") > 0 or modDB:Sum(nil, "ShockBase", "ShockOverride")) and not enemyDB:Flag(nil, "Condition:AlreadyShocked") then
 		local baseShock = (modDB:Override(nil, "ShockBase") or 0) * (1 + modDB:Sum("INC", nil, "EnemyShockEffect") / 100)
-		local overrideShock = 0
+		local overrideShock = baseShock
 		for i, value in ipairs(modDB:Tabulate("BASE", { }, "ShockBase", "ShockOverride")) do
 			local mod = value.mod
 			local inc = 1 + modDB:Sum("INC", nil, "EnemyShockEffect") / 100

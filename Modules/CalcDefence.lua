@@ -10,6 +10,7 @@ local ipairs = ipairs
 local t_insert = table.insert
 local m_min = math.min
 local m_max = math.max
+local m_floor = math.floor
 local s_format = string.format
 
 local tempTable1 = { }
@@ -51,11 +52,18 @@ end
 
 function calcs.actionSpeedMod(actor)
 	local modDB = actor.modDB
+	local base = 1 + modDB:Sum("BASE", nil, "ActionSpeed") / 100
 	local actionSpeedMod = 1 + (m_max(-data.misc.TemporalChainsEffectCap, modDB:Sum("INC", nil, "TemporalChainsActionSpeed")) + modDB:Sum("INC", nil, "ActionSpeed")) / 100
+	local more = modDB:More(nil, "ActionSpeed")
+	local totalActionSpeed = base * actionSpeedMod * more
 	if modDB:Flag(nil, "ActionSpeedCannotBeBelowBase") then
-		actionSpeedMod = m_max(1, actionSpeedMod)
+		--actionSpeedMod = m_max(1, actionSpeedMod)
+		totalActionSpeed = m_max(base, totalActionSpeed)
 	end
-	return actionSpeedMod
+	if modDB:Override(nil, "ActionSpeed") then
+		totalActionSpeed = modDB:Override(nil, "ActionSpeed") / 100
+	end
+	return totalActionSpeed
 end
 
 -- Performs all defensive calculations
@@ -74,6 +82,25 @@ function calcs.defence(env, actor)
 	output.DamageReductionMax = modDB:Override(nil, "DamageReductionMax") or data.misc.DamageReductionCap
 	output.PhysicalResist = m_min(output.DamageReductionMax, modDB:Sum("BASE", nil, "PhysicalDamageReduction"))
 	output.PhysicalResistWhenHit = m_min(output.DamageReductionMax, output.PhysicalResist + modDB:Sum("BASE", nil, "PhysicalDamageReductionWhenHit"))
+	if modDB:Flag(nil, "PhysicalResistance") then
+		local max, total
+		max = output.DamageReductionMax
+		total = modDB:Sum("BASE", nil, "PhysicalDamageReduction")
+		output.PhysicalResistance = output.PhysicalResist
+		output["PhysicalResist"] = output.PhysicalResist
+		output["PhysicalResistTotal"] = total
+		output["PhysicalResistOverCap"] = m_max(0, total - max)
+		output["PhysicalResistOver75"] = m_max(0, total - 75)
+		output["MissingPhysicalResist"] = m_max(0, max - m_min(total, max))
+		if breakdown then
+			breakdown["PhysicalResist"] = {
+				"Max: "..max.."%",
+				"Total: "..total.."%",
+			}
+		end
+	else
+		output.PhysicalDamageReductionResist = 1
+	end
 	for _, elem in ipairs(resistTypeList) do
 		local max, total
 		if elem == "Chaos" and modDB:Flag(nil, "ChaosInoculation") then
@@ -188,6 +215,13 @@ function calcs.defence(env, actor)
 					breakdown.slot("Global", nil, nil, evasionBase, nil, "Evasion", "ArmourAndEvasion", "Defences")
 				end
 			end
+		end
+		local convEvasionToArmour = modDB:Sum("BASE", nil, "EvasionGainAsArmour")
+		if convEvasionToArmour > 0 then
+			armourBase = modDB:Sum("BASE", nil, "Evasion") * convEvasionToArmour / 100
+			if breakdown then
+				breakdown.slot("Conversion", "Evasion to Armour", nil, armourBase, total, "Armour", "ArmourAndEvasion", "Defences", "Evasion")
+			end			
 		end
 		local convManaToArmour = modDB:Sum("BASE", nil, "ManaConvertToArmour")
 		if convManaToArmour > 0 then
@@ -304,11 +338,66 @@ function calcs.defence(env, actor)
 		output.SpellProjectileBlockChance = output.ProjectileBlockChance
 	else
 		output.SpellBlockChance = m_min(modDB:Sum("BASE", nil, "SpellBlockChance") * calcLib.mod(modDB, nil, "SpellBlockChance"), output.SpellBlockChanceMax) 
-		output.SpellProjectileBlockChance = output.SpellBlockChance
+		output.SpellProjectileBlockChance = m_min(output.SpellBlockChance  + modDB:Sum("BASE", nil, "ProjectileBlockChance") * calcLib.mod(modDB, nil, "SpellBlockChance"), output.SpellBlockChanceMax)
+	end
+	local AttackBlockLuck = 0
+	local SpellBlockLuck = 0
+	if true and modDB:Flag(nil, "BlockChanceIsLucky") or modDB:Flag(nil, "AttackBlockChanceIsLucky") then
+		AttackBlockLuck = AttackBlockLuck + 1
+	end
+	if true and modDB:Flag(nil, "BlockChanceIsUnlucky") or modDB:Flag(nil, "AttackBlockChanceIsUnlucky") then
+		AttackBlockLuck = AttackBlockLuck - 1
+	end
+	if true and modDB:Flag(nil, "BlockChanceIsLucky") or modDB:Flag(nil, "SpellBlockChanceIsLucky") then
+		SpellBlockLuck = SpellBlockLuck + 1
+	end
+	if true and modDB:Flag(nil, "BlockChanceIsUnlucky") or modDB:Flag(nil, "SpellBlockChanceIsUnlucky") then
+		SpellBlockLuck = SpellBlockLuck - 1
+	end
+
+	local preBlock = output.BlockChance
+	local preProjBlock = output.ProjectileBlockChance
+	local preSpellProjBlock = output.SpellProjectileBlockChance
+	local preSpellBlock = output.SpellBlockChance
+	if env.mode_effective and AttackBlockLuck > 0 then
+		output.BlockChance = output.BlockChance * ( 2 - output.BlockChance / 100 )
+		output.ProjectileBlockChance = output.ProjectileBlockChance * ( 2 - output.ProjectileBlockChance / 100 )
+	elseif env.mode_effective and AttackBlockLuck < 0 then
+		output.BlockChance = output.BlockChance / 100 * output.BlockChance
+		output.ProjectileBlockChance = output.ProjectileBlockChance / 100 * output.ProjectileBlockChance
+	end
+	if env.mode_effective and SpellBlockLuck < 0 then
+		output.SpellBlockChance = output.SpellBlockChance / 100 * output.SpellBlockChance 
+		output.SpellProjectileBlockChance = output.SpellProjectileBlockChance / 100 * output.SpellProjectileBlockChance 
+	elseif env.mode_effective and SpellBlockLuck > 0 then
+		output.SpellBlockChance = output.SpellBlockChance * ( 2 - output.SpellBlockChance / 100 )
+		output.SpellProjectileBlockChance = output.SpellProjectileBlockChance * ( 2 - output.SpellProjectileBlockChance / 100 )
 	end
 	if breakdown then
-		breakdown.BlockChance = breakdown.simple(baseBlockChance, nil, output.BlockChance, "BlockChance")
-		breakdown.SpellBlockChance = breakdown.simple(0, nil, output.SpellBlockChance, "SpellBlockChance")
+		breakdown.BlockChance = breakdown.simple(baseBlockChance, nil, preBlock, "BlockChance") or {}
+		if env.mode_effective then
+			if AttackBlockLuck > 0 then
+				t_insert(breakdown.BlockChance, s_format("Block Chance is Lucky:"))
+				t_insert(breakdown.BlockChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preBlock / 100, preBlock / 100))
+				t_insert(breakdown.BlockChance, s_format("= %.2f%%", output.BlockChance))
+			elseif AttackBlockLuck < 0 then
+				t_insert(breakdown.BlockChance, s_format("Block Chance is Unlucky:"))
+				t_insert(breakdown.BlockChance, s_format("(%.4f) x (%.4f)", preBlock / 100, preBlock / 100))
+				t_insert(breakdown.BlockChance, s_format("= %.2f%%", output.BlockChance))
+			end
+		end
+		breakdown.SpellBlockChance = breakdown.simple(0, nil, preSpellBlock, "SpellBlockChance") or {}
+		if env.mode_effective then
+			if SpellBlockLuck > 0 then
+				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Lucky:"))
+				t_insert(breakdown.SpellBlockChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preSpellBlock / 100, preSpellBlock / 100))
+				t_insert(breakdown.SpellBlockChance, s_format("= %.2f%%", output.SpellBlockChance))
+			elseif SpellBlockLuck < 0 then
+				t_insert(breakdown.SpellBlockChance, s_format("Spell Block Chance is Unlucky:"))
+				t_insert(breakdown.SpellBlockChance, s_format("(%.4f) x (%.4f)", preSpellBlock / 100, preSpellBlock / 100))
+				t_insert(breakdown.SpellBlockChance, s_format("= %.2f%%", output.SpellBlockChance))
+			end
+		end
 	end
 	if modDB:Flag(nil, "CannotBlockAttacks") then
 		output.BlockChance = 0
@@ -332,11 +421,56 @@ function calcs.defence(env, actor)
 	-- Dodge
 	output.AttackDodgeChance = m_min(modDB:Sum("BASE", nil, "AttackDodgeChance"), data.misc.DodgeChanceCap)
 	output.SpellDodgeChance = m_min(modDB:Sum("BASE", nil, "SpellDodgeChance"), data.misc.DodgeChanceCap)
-	if env.mode_effective and modDB:Flag(nil, "DodgeChanceIsUnlucky") then
-		output.AttackDodgeChance = output.AttackDodgeChance / 100 * output.AttackDodgeChance
-		output.SpellDodgeChance = output.SpellDodgeChance / 100 * output.SpellDodgeChance
+	local AttackDodgeLuck = 0
+	local SpellDodgeLuck = 0
+	if true and modDB:Flag(nil, "DodgeChanceIsLucky") or modDB:Flag(nil, "AttackDodgeChanceIsLucky") then
+		AttackDodgeLuck = AttackDodgeLuck + 1
 	end
-
+	if true and modDB:Flag(nil, "DodgeChanceIsUnlucky") or modDB:Flag(nil, "AttackDodgeChanceIsUnlucky") then
+		AttackDodgeLuck = AttackDodgeLuck - 1
+	end
+	if true and modDB:Flag(nil, "DodgeChanceIsLucky") or modDB:Flag(nil, "SpellDodgeChanceIsLucky") then
+		SpellDodgeLuck = SpellDodgeLuck + 1
+	end
+	if true and modDB:Flag(nil, "DodgeChanceIsUnlucky") or modDB:Flag(nil, "SpellDodgeChanceIsUnlucky") then
+		SpellDodgeLuck = SpellDodgeLuck - 1
+	end
+	local preAttackDodge = output.AttackDodgeChance
+	local preSpellDodge = output.SpellDodgeChance
+	if env.mode_effective and AttackDodgeLuck > 0 then
+		output.AttackDodgeChance = output.AttackDodgeChance * ( 2 - output.AttackDodgeChance / 100 )
+	elseif env.mode_effective and AttackDodgeLuck < 0 then
+		output.AttackDodgeChance = output.AttackDodgeChance / 100 * output.AttackDodgeChance 
+	end
+	if env.mode_effective and SpellDodgeLuck < 0 then
+		output.SpellDodgeChance = output.SpellDodgeChance / 100 * output.SpellDodgeChance 
+	elseif env.mode_effective and SpellDodgeLuck > 0 then
+		output.SpellDodgeChance = output.SpellDodgeChance * ( 2 - output.SpellDodgeChance / 100 )
+	end
+	if breakdown then
+		breakdown.AttackDodgeChance = breakdown.simple(0, nil, preAttackDodge, "AttackDodgeChance") or {}
+		breakdown.SpellDodgeChance = breakdown.simple(0, nil, preSpellDodge, "SpellDodgeChance") or {}
+		if env.mode_effective then
+			if AttackDodgeLuck > 0 then
+				t_insert(breakdown.AttackDodgeChance, s_format("Attack Dodge Chance is Lucky:"))
+				t_insert(breakdown.AttackDodgeChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preAttackDodge / 100, preAttackDodge / 100))
+				t_insert(breakdown.AttackDodgeChance, s_format("= %.2f%%", output.AttackDodgeChance))	
+			elseif AttackDodgeLuck < 0 then
+				t_insert(breakdown.AttackDodgeChance, s_format("Attack Dodge Chance is Unlucky:"))
+				t_insert(breakdown.AttackDodgeChance, s_format("(%.4f) x (%.4f)", preAttackDodge / 100, preAttackDodge / 100))
+				t_insert(breakdown.AttackDodgeChance, s_format("= %.2f%%", output.AttackDodgeChance))
+			end
+			if SpellDodgeLuck > 0 then
+				t_insert(breakdown.SpellDodgeChance, s_format("Spell Dodge Chance is Lucky:"))
+				t_insert(breakdown.SpellDodgeChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preSpellDodge / 100, preSpellDodge / 100))
+				t_insert(breakdown.SpellDodgeChance, s_format("= %.2f%%", output.SpellDodgeChance))	
+			elseif SpellDodgeLuck < 0 then
+				t_insert(breakdown.SpellDodgeChance, s_format("Spell Dodge Chance is Unlucky:"))
+				t_insert(breakdown.SpellDodgeChance, s_format("(%.4f) x (%.4f)", preSpellDodge / 100, preSpellDodge / 100))
+				t_insert(breakdown.SpellDodgeChance, s_format("= %.2f%%", output.SpellDodgeChance))
+			end
+		end
+	end
 	-- Recovery modifiers
 	output.LifeRecoveryRateMod = calcLib.mod(modDB, nil, "LifeRecoveryRate")
 	output.ManaRecoveryRateMod = calcLib.mod(modDB, nil, "ManaRecoveryRate")
@@ -529,15 +663,17 @@ function calcs.defence(env, actor)
 	end
 
 	-- Miscellaneous: move speed, stun recovery, avoidance
-	output.MovementSpeedMod = modDB:Override(nil, "MovementSpeed") or calcLib.mod(modDB, nil, "MovementSpeed")
+	output.BaseMovementSpeed = 1 + modDB:Sum("BASE", nil, "MovementSpeed")/100
+	output.MovementSpeedMod = modDB:Override(nil, "MovementSpeed") or ( calcLib.mod(modDB, nil, "MovementSpeed") * output.BaseMovementSpeed )
 	if modDB:Flag(nil, "MovementSpeedCannotBeBelowBase") then
-		output.MovementSpeedMod = m_max(output.MovementSpeedMod, 1)
+		output.MovementSpeedMod = m_max(output.MovementSpeedMod, output.BaseMovementSpeed )
 	end
 	output.EffectiveMovementSpeedMod = output.MovementSpeedMod * output.ActionSpeedMod
 	if breakdown then
 		breakdown.EffectiveMovementSpeedMod = { }
 		breakdown.multiChain(breakdown.EffectiveMovementSpeedMod, {
-			{ "%.2f ^8(movement speed modifier)", output.MovementSpeedMod },
+			{ "%.2f ^8(base movement speed)", BaseMovementSpeed },
+			{ "%.2f ^8(movement speed modifier)", output.MovementSpeedMod / output.BaseMovementSpeed },
 			{ "%.2f ^8(action speed modifier)", output.ActionSpeedMod },
 			total = s_format("= %.2f ^8(effective movement speed modifier)", output.EffectiveMovementSpeedMod)
 		})
@@ -776,10 +912,14 @@ function calcs.defence(env, actor)
 			local resist = modDB:Flag(nil, "SelfIgnore"..damageType.."Resistance") and 0 or output[damageType.."Resist"]
 			output[damageType.."TakenDotMult"] = (1 - resist / 100) * (1 + takenInc / 100) * takenMore
 			if breakdown then
+				local physicalFlag = 0
+				if modDB:Flag(nil, "PhysicalResistance") then
+					physicalFlag = 1
+				end
 				breakdown[damageType.."TakenDotMult"] = { }
 				breakdown.multiChain(breakdown[damageType.."TakenDotMult"], {
 					label = "DoT Multiplier:",
-					{ "%.2f ^8(%s)", (1 - resist / 100), damageType == "Physical" and "physical damage reduction" or "resistance" },
+					{ "%.2f ^8(%s)", (1 - resist / 100), damageType == "Physical" and physicalFlag ~= 1 and "physical damage reduction" or "resistance" },
 					{ "%.2f ^8(increased/reduced damage taken)", (1 + takenInc / 100) },
 					{ "%.2f ^8(more/less damage taken)", takenMore },
 					total = s_format("= %.2f", output[damageType.."TakenDotMult"]),
@@ -981,7 +1121,7 @@ function calcs.defence(env, actor)
 					local damage = env.configInput.enemyHit or env.data.monsterDamageTable[env.enemyLevel] * 1.5
 					local armourReduct = 0
 					local portionArmour = 100
-					if destType == "Physical" then
+					if destType == "Physical" and not modDB:Flag(nil, "PhysicalResistance") then
 						if not modDB:Flag(nil, "ArmourDoesNotApplyToPhysicalDamageTaken") then
 							armourReduct = calcs.armourReductionDouble(output.Armour, damage * portion / 100, doubleArmourChance)
 							resist = m_min(output.DamageReductionMax, resist + armourReduct)
@@ -992,7 +1132,11 @@ function calcs.defence(env, actor)
 						resist = resist + m_min(output.DamageReductionMax, armourReduct) * portionArmour / 100
 					end
 					if damageType == destType then
-						output[damageType.."DamageReduction"] = damageType == "Physical" and resist or m_min(output.DamageReductionMax, armourReduct) * portionArmour / 100
+						local PhysicalFlag = 0
+						if modDB:Flag(nil, "PhysicalResistance") then
+							PhysicalFlag = 1
+						end
+						output[damageType.."DamageReduction"] = damageType == "Physical" and PhysicalFlag ~= 1 and resist or m_min(output.DamageReductionMax, armourReduct) * portionArmour / 100
 						if breakdown then
 							breakdown[damageType.."DamageReduction"] = {
 								s_format("Enemy Hit Damage: %d ^8(%s the Configuration tab)", damage, env.configInput.enemyHit and "overridden from" or "can be overridden in"),
