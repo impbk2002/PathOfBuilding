@@ -340,7 +340,8 @@ function calcs.buildOutput(build, mode)
 
 	if mode == "MAIN" then
 		output.ExtraPoints = env.modDB:Sum("BASE", nil, "ExtraPoints")
-
+		output.AscExtras = env.modDB:Sum("BASE", nil, "AscExtras")
+		
 		local specCfg = {
 			source = "Tree"
 		}
