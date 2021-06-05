@@ -1044,6 +1044,7 @@ return {
 	mod("ForkCountMax", "BASE", nil),
 },
 ["number_of_additional_forks_base"] = {
+	flag("ForkOnce"),
 	flag("ForkTwice"),
 	mod("ForkCountMax", "BASE", nil),
 },
